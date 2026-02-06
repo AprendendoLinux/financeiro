@@ -2,7 +2,8 @@ from app import create_app
 
 app = create_app()
 
-# --- CORREÇÃO DO FILTRO DE MOEDA ---
+# --- FILTROS JINJA2 PERSONALIZADOS ---
+
 def format_currency(value):
     """
     Formata números float/decimal para o padrão BRL (1.500,00)
@@ -18,8 +19,15 @@ def format_currency(value):
     except (ValueError, TypeError):
         return value
 
-# Registra o filtro diretamente na instância do app criada
+def trim_slash(value):
+    """
+    Remove a barra final de uma string, útil para construir URLs absolutas de imagens.
+    """
+    return value.rstrip('/')
+
+# Registra os filtros diretamente na instância do app criada
 app.jinja_env.filters['currency'] = format_currency
+app.jinja_env.filters['trim_slash'] = trim_slash
 # -----------------------------------
 
 if __name__ == '__main__':

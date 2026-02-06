@@ -6,7 +6,19 @@
     <title>Sistema de Controle Financeiro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
+        
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.url_root }}">
+    <meta property="og:title" content="Sistema de Controle Financeiro">
+    <meta property="og:description" content="Gerencie suas finanças pessoais de forma simples e intuitiva.">
+    <meta property="og:image" content="{{ request.url_root | trim_slash }}{{ url_for('static', filename='card.jpg') }}">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="{{ request.url_root }}">
+    <meta name="twitter:title" content="Sistema de Controle Financeiro">
+    <meta name="twitter:description" content="Gerencie suas finanças pessoais de forma simples e intuitiva.">
+    <meta name="twitter:image" content="{{ request.url_root | trim_slash }}{{ url_for('static', filename='card.jpg') }}">
+
     <script>
         tailwind.config = {
             theme: {
