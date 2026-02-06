@@ -1,0 +1,153 @@
+<div class="bg-slate-800 rounded-lg border border-slate-700 shadow-xl overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse" id="transactions-table">
+            <thead>
+                <tr class="bg-slate-900 border-b border-slate-700 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    <th class="px-6 py-4 w-[40%] min-w-[200px]">Descrição</th>
+                    
+                    <th class="px-6 py-4 whitespace-nowrap">Categoria</th>
+                    
+                    <th class="px-6 py-4 text-center whitespace-nowrap cursor-pointer group hover:text-white transition" onclick="sortTransactions()">
+                        <div class="flex items-center justify-center">
+                            <span>Data</span>
+                            <div class="ml-2 flex flex-col space-y-[2px]">
+                                <i class="fas fa-caret-up text-[10px] text-slate-600 group-hover:text-slate-400" id="sort-asc"></i>
+                                <i class="fas fa-caret-down text-[10px] text-slate-600 group-hover:text-slate-400" id="sort-desc"></i>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="px-6 py-4 text-right whitespace-nowrap">Valor</th>
+                    <th class="px-6 py-4 text-center whitespace-nowrap">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700" id="transactions-body">
+                {% for t in transactions %}
+                {# Adicionado data-timestamp formatado para ordenação #}
+                <tr class="hover:bg-slate-750 transition-colors duration-150 group {% if t.is_scheduled %}opacity-75{% endif %}" 
+                    data-timestamp="{{ t.date.strftime('%Y%m%d') }}{{ t.created_at.strftime('%H%M') }}">
+                    
+                    <td class="px-6 py-4 break-words">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center 
+                                {% if t.type == 'receita' %}bg-emerald-900/50 text-emerald-400
+                                {% elif t.type == 'despesa' %}bg-red-900/50 text-red-400
+                                {% else %}bg-blue-900/50 text-blue-400{% endif %}">
+                                <i class="fas 
+                                    {% if t.type == 'receita' %}fa-arrow-up
+                                    {% elif t.type == 'despesa' %}fa-arrow-down
+                                    {% else %}fa-exchange-alt{% endif %}"></i>
+                            </div>
+                            <div class="ml-4 max-w-[200px] sm:max-w-xs">
+                                <div class="text-sm font-medium text-white group-hover:text-sky-300 transition-colors">
+                                    {% if '(Ref:' in t.description %}
+                                        {{ t.description.split('(Ref:')[0] }}
+                                        <div class="text-xs text-slate-400 font-normal mt-0.5">
+                                            (Ref: {{ t.description.split('(Ref:')[1] }}
+                                        </div>
+                                    {% else %}
+                                        {{ t.description }}
+                                    {% endif %}
+                                </div>
+                                <div class="text-xs text-slate-500 mt-0.5">
+                                    {% if t.account_id %}{{ t.account.name }}{% endif %}
+                                    {% if t.card_id %}{{ t.card.name }}{% endif %}
+                                    {% if t.installment_total and t.installment_total > 1 %}
+                                        <span class="ml-1 text-sky-400">({{ t.installment_current }}/{{ t.installment_total }})</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if t.category %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border"
+                              style="background-color: {{ t.category.color_hex }}20; color: {{ t.category.color_hex }}; border-color: {{ t.category.color_hex }}40;">
+                            {{ t.category.name }}
+                        </span>
+                        {% else %}
+                        <span class="text-slate-500 text-xs">-</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="px-6 py-4 text-center whitespace-nowrap">
+                        <div class="text-sm text-slate-300 font-medium">{{ t.date.strftime('%d/%m/%Y') }}</div>
+                        <div class="text-xs text-slate-500">{{ t.created_at.strftime('%H:%M') }}</div>
+                    </td>
+
+                    <td class="px-6 py-4 text-right whitespace-nowrap">
+                        <span class="font-bold font-mono text-base
+                            {% if t.type == 'receita' or t.type == 'transf_entrada' %}text-emerald-400
+                            {% else %}text-red-400{% endif %}">
+                            {% if t.type == 'receita' or t.type == 'transf_entrada' %}+{% else %}-{% endif %}
+                            R$ {{ "%.2f"|format(t.amount)|replace('.', ',') }}
+                        </span>
+                    </td>
+
+                    <td class="px-6 py-4 text-center whitespace-nowrap">
+                        <div class="flex justify-center space-x-3">
+                            
+                            {# Lógica de Antecipação #}
+                            {% if t.is_scheduled and (t.fixed_expense_id or t.fixed_revenue_id) %}
+                                {% if t.is_locked_anticipate %}
+                                    <span class="text-slate-600 cursor-not-allowed" title="Existe uma pendência anterior"><i class="fas fa-clock"></i></span>
+                                {% else %}
+                                    <a href="{{ url_for('finance.anticipate_fixed', id=t.id) }}" 
+                                       class="text-yellow-500 hover:text-yellow-400 transition transform hover:scale-110" 
+                                       title="Antecipar para Hoje">
+                                        <i class="fas fa-history"></i>
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+
+                            {# Botão Editar #}
+                            <button type="button" 
+                                    data-id="{{ t.id }}"
+                                    data-desc="{{ t.description }}"
+                                    data-amount="{{ t.amount }}"
+                                    data-date="{{ t.date }}"
+                                    data-account_id="{{ t.account_id or '' }}"
+                                    data-card_id="{{ t.card_id or '' }}"
+                                    onclick="openEditTransaction(this)" 
+                                    class="text-blue-500 hover:text-blue-400 transition transform hover:scale-110" 
+                                    title="Editar">
+                                <i class="fas fa-pen"></i>
+                            </button>
+
+                            {# Lógica de Exclusão (Modal Bonito) #}
+                            {% if t.installment_total and t.installment_total > 1 and t.date > today %}
+                                <span class="text-slate-600 cursor-not-allowed" title="Para excluir, adiante a parcela para o mês atual no painel de cartões.">
+                                    <i class="fas fa-trash"></i>
+                                </span>
+                            
+                            {% elif (t.fixed_expense_id or t.fixed_revenue_id) and not t.card_id %}
+                                <span class="text-slate-600 cursor-not-allowed" title="Para remover este lançamento, desligue o interruptor no painel de Fixos.">
+                                    <i class="fas fa-trash"></i>
+                                </span>
+                                
+                            {% else %}
+                                <button type="button"
+                                   onclick="openDeleteModal('{{ url_for('finance.delete_transaction', id=t.id) }}', '{% if t.fixed_expense_id or t.fixed_revenue_id %}{% if t.date > today %}Atenção: Isso cancelará este plano fixo daqui para frente.{% else %}Isso exclui apenas este lançamento atual. Para cancelar o plano, avance para o próximo mês e exclua o lançamento futuro.{% endif %}{% else %}Tem certeza que deseja excluir este lançamento?{% endif %}')" 
+                                   class="text-red-500 hover:text-red-400 transition transform hover:scale-110" 
+                                   title="Excluir">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-inbox text-4xl mb-3 opacity-50"></i>
+                            <p>Nenhum lançamento neste período.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

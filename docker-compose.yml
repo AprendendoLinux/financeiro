@@ -1,0 +1,52 @@
+networks:
+  financeiro-network:
+    driver: bridge
+    name: financeiro-network
+    enable_ipv6: true
+
+name: financeiro-dev
+services:
+  db-financeiro:
+    image: mysql:8.0
+    container_name: db-financeiro
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_super_secret_password
+      MYSQL_DATABASE: financeiro
+      MYSQL_USER: financeiro
+      MYSQL_PASSWORD: app_secure_password
+      TZ: America/Sao_Paulo
+    volumes:
+      - /srv/financeiro/db:/var/lib/mysql
+    networks:
+      - financeiro-network
+    ports:
+      - 3306:3306
+
+  web:
+    build: .
+    container_name: app-financeiro
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=app.run
+      - FLASK_DEBUG=1
+      - SECRET_KEY=sua_chave_secreta_de_producao_complexa_aqui
+      - DB_HOST=db-financeiro
+      - DB_NAME=financeiro
+      - DB_USER=financeiro
+      - DB_PASSWORD=app_secure_password
+      - TZ=America/Sao_Paulo
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=seuemail@gmail.com
+      - SMTP_PASSWORD=xxxxxxxxxxxxxx
+      - SMTP_FROM=Sistema de Enquetes <seuemail@gmail.com>
+    volumes:
+      - /srv/financeiro/migrations:/app/migrations
+      - /srv/financeiro/uploads:/app/static/uploads
+    depends_on:
+      - db-financeiro
+    networks:
+      - financeiro-network

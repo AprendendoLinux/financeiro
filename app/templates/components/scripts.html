@@ -1,0 +1,725 @@
+<script>
+    // ==========================================
+    // 1. GERENCIAMENTO DE MODAIS E UI GERAL
+    // ==========================================
+
+    function openModal(id) { 
+        const el = document.getElementById('modal-' + id);
+        if(el) el.classList.remove('hidden'); 
+    }
+    
+    function closeModal(id) { 
+        const el = document.getElementById('modal-' + id);
+        if(el) el.classList.add('hidden'); 
+    }
+    
+    // Wrapper para compatibilidade
+    function closeEditModal(type) { closeModal('edit-' + type); }
+
+    // NOVA FUNÇÃO: Modal Genérico de Exclusão (Perigo/Vermelho)
+    function openDeleteModal(url, message) {
+        const btnConfirm = document.getElementById('btn-confirm-delete');
+        const msgElement = document.getElementById('delete-modal-message');
+        
+        // Configura o link de destino
+        btnConfirm.href = url;
+        
+        // Configura a mensagem
+        if (message) {
+            msgElement.innerText = message;
+        } else {
+            msgElement.innerText = "Tem certeza que deseja excluir?";
+        }
+        
+        openModal('generic-delete');
+    }
+
+    // NOVA FUNÇÃO: Modal de Notificação (Sucesso/Info)
+    function openNotificationModal(category, message) {
+        const titleEl = document.getElementById('notif-title');
+        const msgEl = document.getElementById('notif-message');
+        const iconBg = document.getElementById('notif-icon-bg');
+        const icon = document.getElementById('notif-icon');
+        const btn = document.getElementById('notif-btn');
+
+        // Resetar classes
+        iconBg.className = "mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10 transition-colors duration-300";
+        icon.className = "fas text-lg";
+        btn.className = "w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none sm:ml-3 sm:w-auto sm:text-sm hover:opacity-90";
+
+        let title = 'Notificação';
+
+        if (category === 'success') {
+            title = 'Sucesso!';
+            iconBg.classList.add('bg-emerald-900/50', 'border', 'border-emerald-500/30');
+            icon.classList.add('fa-check', 'text-emerald-500');
+            btn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+        } else if (category === 'danger') {
+            title = 'Erro!';
+            iconBg.classList.add('bg-red-900/50', 'border', 'border-red-500/30');
+            icon.classList.add('fa-times', 'text-red-500');
+            btn.classList.add('bg-red-600', 'hover:bg-red-700');
+        } else if (category === 'warning') {
+            title = 'Atenção!';
+            iconBg.classList.add('bg-yellow-900/50', 'border', 'border-yellow-500/30');
+            icon.classList.add('fa-exclamation-triangle', 'text-yellow-500');
+            btn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+        } else {
+            title = 'Informação';
+            iconBg.classList.add('bg-blue-900/50', 'border', 'border-blue-500/30');
+            icon.classList.add('fa-info', 'text-blue-500');
+            btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        }
+
+        titleEl.innerText = title;
+        msgEl.innerText = message;
+        
+        openModal('notification');
+    }
+
+    // NOVA FUNÇÃO: Ordenação da Tabela
+    let sortAscending = false; 
+
+    function sortTransactions() {
+        const tbody = document.getElementById("transactions-body");
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        const iconAsc = document.getElementById("sort-asc");
+        const iconDesc = document.getElementById("sort-desc");
+
+        sortAscending = !sortAscending;
+
+        if (sortAscending) {
+            iconAsc.classList.add("text-sky-400");
+            iconAsc.classList.remove("text-slate-600");
+            iconDesc.classList.add("text-slate-600");
+            iconDesc.classList.remove("text-sky-400");
+        } else {
+            iconDesc.classList.add("text-sky-400");
+            iconDesc.classList.remove("text-slate-600");
+            iconAsc.classList.add("text-slate-600");
+            iconAsc.classList.remove("text-sky-400");
+        }
+
+        rows.sort((a, b) => {
+            const timeA = parseFloat(a.getAttribute("data-timestamp")) || 0;
+            const timeB = parseFloat(b.getAttribute("data-timestamp")) || 0;
+
+            if (sortAscending) {
+                return timeA - timeB;
+            } else {
+                return timeB - timeA;
+            }
+        });
+
+        tbody.innerHTML = "";
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    // Função de Controle de Data (Futuro vs Hoje)
+    function toggleDateLimit(cb, inputId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+
+        if (cb.checked) {
+            input.removeAttribute('max');
+        } else {
+            const today = new Date().toISOString().split('T')[0];
+            input.setAttribute('max', today);
+        }
+    }
+
+    // ==========================================
+    // 2. FUNÇÕES DE FORMULÁRIOS E SENHAS
+    // ==========================================
+
+    function togglePassword(fieldId, iconId) {
+        const input = document.getElementById(fieldId);
+        const icon = iconId ? document.getElementById(iconId) : document.getElementById('icon-' + fieldId);
+        
+        if (!input) return;
+
+        if (input.type === "password") {
+            input.type = "text";
+            if (icon) {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+                icon.classList.add('text-blue-400');
+            }
+        } else {
+            input.type = "password";
+            if (icon) {
+                icon.classList.remove('fa-eye-slash', 'text-blue-400');
+                icon.classList.add('fa-eye');
+            }
+        }
+    }
+
+    function checkPassword() {
+        const pwdInput = document.getElementById('password');
+        if (!pwdInput) return;
+
+        const pwd = pwdInput.value;
+        
+        const reqs = {
+            length: pwd.length >= 6,
+            upper: /[A-Z]/.test(pwd),
+            number: /\d/.test(pwd),
+            symbol: /[\W_]/.test(pwd)
+        };
+
+        updateReq('req-length', reqs.length);
+        updateReq('req-upper', reqs.upper);
+        updateReq('req-number', reqs.number);
+        updateReq('req-symbol', reqs.symbol);
+    }
+
+    function updateReq(id, valid) {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        const icon = el.querySelector('i');
+        if (valid) {
+            el.classList.remove('text-slate-500');
+            el.classList.add('text-emerald-400', 'font-bold');
+            if(icon) {
+                icon.classList.remove('fa-circle', 'text-[8px]');
+                icon.classList.add('fa-check', 'text-sm');
+            }
+        } else {
+            el.classList.add('text-slate-500');
+            el.classList.remove('text-emerald-400', 'font-bold');
+            if(icon) {
+                icon.classList.add('fa-circle', 'text-[8px]');
+                icon.classList.remove('fa-check', 'text-sm');
+            }
+        }
+    }
+
+    // ==========================================
+    // 3. LÓGICA DE TRANSAÇÕES
+    // ==========================================
+
+    function toggleCardField() {
+        const expenseOptions = document.getElementById('expense-options');
+        const radioType = document.querySelector('input[name="type"]:checked');
+        
+        if (!expenseOptions || !radioType) return;
+
+        if (radioType.value === 'receita') {
+            expenseOptions.classList.add('hidden');
+        } else {
+            expenseOptions.classList.remove('hidden');
+        }
+    }
+
+    // ==========================================
+    // 4. MODAL DE PAGAMENTO DE CARTÃO
+    // ==========================================
+
+    function openPayCardModal(id, name, amount) {
+        document.getElementById('pay-card-id').value = id;
+        document.getElementById('pay-card-name').innerText = 'Cartão: ' + name;
+        document.getElementById('pay-card-amount').value = amount;
+        openModal('pay-card');
+    }
+
+    // ==========================================
+    // 5. ANTECIPAÇÃO DE PARCELAS
+    // ==========================================
+
+    let loadedGroups = [];
+
+    async function openAdvanceModal(id, name) {
+        document.getElementById('advance-card-id').value = id;
+        document.getElementById('advance-card-name').innerText = name;
+        
+        const listDiv = document.getElementById('advance-list');
+        const totalLabel = document.getElementById('advance-total');
+        const submitBtn = document.querySelector('#modal-advance button[type="submit"]');
+        
+        listDiv.innerHTML = '<p class="text-center text-slate-500 text-xs py-4"><i class="fas fa-spinner fa-spin"></i> Buscando faturas...</p>';
+        totalLabel.innerText = 'R$ 0,00';
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+        openModal('advance');
+
+        try {
+            const response = await fetch(`/api/card/${id}/installments`);
+            if (!response.ok) throw new Error('Falha na requisição');
+            
+            loadedGroups = await response.json();
+            renderAdvanceGroups(); 
+
+        } catch (err) {
+            listDiv.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Erro ao carregar parcelas.</p>';
+            console.error(err);
+        }
+    }
+
+    function renderAdvanceGroups() {
+        const listDiv = document.getElementById('advance-list');
+        const submitBtn = document.querySelector('#modal-advance button[type="submit"]');
+        
+        listDiv.innerHTML = '';
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        document.getElementById('advance-total').innerText = 'Selecione uma compra';
+
+        if (loadedGroups.length === 0) {
+            listDiv.innerHTML = '<p class="text-center text-slate-500 text-xs py-4">Nenhuma parcela futura encontrada.</p>';
+            return;
+        }
+
+        loadedGroups.forEach((group, index) => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between p-3 mb-2 bg-slate-800 hover:bg-slate-700 rounded-lg cursor-pointer border border-slate-700 hover:border-sky-500 transition group';
+            const totalFmt = group.total_remaining.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            row.innerHTML = `
+                <div>
+                    <p class="text-sm text-white font-bold group-hover:text-sky-300 transition">${group.description}</p>
+                    <p class="text-xs text-slate-400">${group.count} parcela(s) restante(s)</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm font-bold text-slate-200">${totalFmt}</p>
+                    <p class="text-[10px] text-sky-400 uppercase font-bold tracking-wider">Ver Parcelas <i class="fas fa-chevron-right ml-1"></i></p>
+                </div>
+            `;
+            row.onclick = () => renderAdvanceItems(index);
+            listDiv.appendChild(row);
+        });
+    }
+
+    function renderAdvanceItems(groupIndex) {
+        const group = loadedGroups[groupIndex];
+        const listDiv = document.getElementById('advance-list');
+        const submitBtn = document.querySelector('#modal-advance button[type="submit"]');
+        
+        listDiv.innerHTML = '';
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        document.getElementById('advance-total').innerText = 'R$ 0,00';
+
+        const header = document.createElement('div');
+        header.className = 'flex items-center mb-3 pb-2 border-b border-slate-700';
+        header.innerHTML = `
+            <button type="button" onclick="renderAdvanceGroups()" class="text-slate-400 hover:text-white text-sm mr-3 flex items-center">
+                <i class="fas fa-arrow-left mr-1"></i> Voltar
+            </button>
+            <span class="text-sky-400 font-bold text-sm truncate flex-1 text-right">${group.description}</span>
+        `;
+        listDiv.appendChild(header);
+
+        group.items.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between p-2 hover:bg-slate-800 rounded cursor-pointer border border-transparent hover:border-slate-600 transition';
+            const valFmt = item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            row.onclick = (e) => {
+                if(e.target.type !== 'checkbox') {
+                    const cb = row.querySelector('input');
+                    cb.checked = !cb.checked;
+                    cb.dispatchEvent(new Event('change'));
+                }
+            };
+
+            row.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <input type="checkbox" name="installments[]" value="${item.id}" class="w-4 h-4 text-sky-600 rounded focus:ring-sky-500 bg-slate-700 border-gray-600 advance-cb" data-amount="${item.amount}">
+                    <div>
+                        <p class="text-sm text-white font-medium">Parcela ${item.current}/${item.total}</p>
+                        <p class="text-xs text-slate-400">Vencimento: ${item.date}</p>
+                    </div>
+                </div>
+                <span class="text-sm font-bold text-slate-200">${valFmt}</span>
+            `;
+            listDiv.appendChild(row);
+        });
+
+        document.querySelectorAll('.advance-cb').forEach(cb => {
+            cb.addEventListener('change', updateTotalAdvance);
+        });
+    }
+
+    function updateTotalAdvance() {
+        let total = 0;
+        document.querySelectorAll('.advance-cb:checked').forEach(cb => {
+            total += parseFloat(cb.dataset.amount);
+        });
+        document.getElementById('advance-total').innerText = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function toggleExpenseMode() {
+        const mode = document.querySelector('input[name="payment_mode"]:checked').value;
+        const containerAccount = document.getElementById('container-account');
+        const containerCredit = document.getElementById('container-credit');
+        const fieldAccount = document.getElementById('field-account');
+        const fieldCard = document.getElementById('field-card');
+
+        if (mode === 'account') {
+            containerAccount.classList.remove('hidden');
+            containerCredit.classList.add('hidden');
+            fieldAccount.required = true;
+            fieldCard.required = false;
+        } else {
+            containerAccount.classList.add('hidden');
+            containerCredit.classList.remove('hidden');
+            fieldAccount.required = false;
+            fieldCard.required = true;
+        }
+    }
+
+    // ==========================================
+    // 6. FUNÇÕES DE CONFIGURAÇÃO (Settings)
+    // ==========================================
+
+    function openTab(tabName) {
+        let contents = document.querySelectorAll('.tab-content');
+        contents.forEach(div => div.classList.add('hidden'));
+        
+        let btns = document.querySelectorAll('.tab-btn');
+        btns.forEach(btn => {
+            btn.classList.remove('border-emerald-500', 'text-emerald-400', 'border-red-400', 'text-red-400', 'text-red-300');
+            
+            if(btn.id === 'tab-account') {
+                btn.classList.add('border-transparent', 'text-red-400'); 
+            } else {
+                btn.classList.add('border-transparent', 'text-slate-400');
+            }
+        });
+
+        const target = document.getElementById('content-' + tabName);
+        if (target) target.classList.remove('hidden');
+        
+        let activeBtn = document.getElementById('tab-' + tabName);
+        if(activeBtn) {
+            activeBtn.classList.remove('border-transparent', 'text-slate-400', 'text-red-400');
+            if(tabName === 'account') {
+                activeBtn.classList.add('border-red-400', 'text-red-300');
+            } else {
+                activeBtn.classList.add('border-emerald-500', 'text-emerald-400');
+            }
+        }
+    }
+
+    function toggleRetroDate(show) {
+        const container = document.getElementById('retro-date-container');
+        const input = container.querySelector('input');
+        if (show) {
+            container.classList.remove('hidden');
+            input.required = true;
+        } else {
+            container.classList.add('hidden');
+            input.required = false;
+            input.value = '';
+        }
+    }
+
+    function toggleFixedMethod(mode) {
+        let radioAccount, radioCredit, divAccount, divCredit, selectAccount, selectCard;
+
+        if (mode === 'new') {
+            radioAccount = document.getElementById('radio-new-account');
+            divAccount = document.getElementById('new-method-account');
+            divCredit = document.getElementById('new-method-credit');
+            selectAccount = document.getElementById('new-fixed-acc');
+            selectCard = document.getElementById('new-fixed-card');
+        } else {
+            radioAccount = document.getElementById('edit-method-account');
+            divAccount = document.getElementById('edit-container-account');
+            divCredit = document.getElementById('edit-container-credit');
+            selectAccount = document.getElementById('edit-fix-acc');
+            selectCard = document.getElementById('edit-fix-card');
+        }
+
+        if (!radioAccount || !divAccount || !divCredit) return;
+
+        if (radioAccount.checked) {
+            divAccount.classList.remove('hidden');
+            divCredit.classList.add('hidden');
+            if (selectAccount) selectAccount.required = true;
+            if (selectCard) selectCard.required = false;
+        } else {
+            divAccount.classList.add('hidden');
+            divCredit.classList.remove('hidden');
+            if (selectAccount) selectAccount.required = false;
+            if (selectCard) selectCard.required = true;
+        }
+    }
+
+    // ==========================================
+    // 7. FUNÇÕES DE EDIÇÃO
+    // ==========================================
+    
+    function openEditCategory(id, name) {
+        document.getElementById('form-edit-category').action = '/settings/category/edit/' + id;
+        document.getElementById('edit-cat-name').value = name;
+        openModal('edit-category');
+    }
+
+    function openEditAccount(id, name) {
+        document.getElementById('form-edit-account').action = '/settings/account/edit/' + id;
+        document.getElementById('edit-acc-name').value = name;
+        openModal('edit-account');
+    }
+
+    function openEditCard(id, name, limit, closing, due) {
+        document.getElementById('form-edit-card').action = '/settings/card/edit/' + id;
+        document.getElementById('edit-card-name').value = name;
+        document.getElementById('edit-card-limit').value = limit;
+        document.getElementById('edit-card-closing').value = closing;
+        document.getElementById('edit-card-due').value = due;
+        openModal('edit-card');
+    }
+
+    function openEditFixed(btn) {
+        const d = btn.dataset;
+        document.getElementById('form-edit-fixed').action = '/settings/fixed/edit/' + d.id;
+        document.getElementById('edit-fix-desc').value = d.desc;
+        document.getElementById('edit-fix-amount').value = d.amount;
+        document.getElementById('edit-fix-day').value = d.day;
+        document.getElementById('edit-fix-cat').value = d.cat;
+        
+        document.getElementById('btn-delete-fixed-modal').href = "/settings/fixed/delete/" + d.id;
+
+        if (d.method === 'credit') {
+            const radioCredit = document.getElementById('edit-method-credit');
+            const radioAccount = document.getElementById('edit-method-account');
+            if(radioCredit) radioCredit.checked = true;
+            if(radioAccount) radioAccount.checked = false;
+            const cardSelect = document.getElementById('edit-fix-card');
+            if(cardSelect) cardSelect.value = d.card;
+        } else {
+            const radioAccount = document.getElementById('edit-method-account');
+            const radioCredit = document.getElementById('edit-method-credit');
+            if(radioAccount) radioAccount.checked = true;
+            if(radioCredit) radioCredit.checked = false;
+            const accSelect = document.getElementById('edit-fix-acc');
+            if(accSelect) accSelect.value = d.acc;
+        }
+        toggleFixedMethod('edit');
+        openModal('edit-fixed');
+    }
+
+    function openEditRevenue(btn) {
+        const d = btn.dataset;
+        document.getElementById('form-edit-revenue').action = '/settings/revenue/edit/' + d.id;
+        document.getElementById('edit-rev-desc').value = d.desc;
+        document.getElementById('edit-rev-amount').value = d.amount;
+        document.getElementById('edit-rev-day').value = d.day;
+        document.getElementById('edit-rev-cat').value = d.cat;
+        document.getElementById('edit-rev-acc').value = d.acc;
+        
+        document.getElementById('btn-delete-revenue-modal').href = "/settings/revenue/delete/" + d.id;
+        openModal('edit-revenue');
+    }
+
+    // Função para editar transação usando dataset
+    function openEditTransaction(btn) {
+        const d = btn.dataset;
+        document.getElementById('form-edit-trans').action = '/transaction/edit/' + d.id;
+        document.getElementById('edit-trans-desc').value = d.desc;
+        document.getElementById('edit-trans-amount').value = d.amount;
+        openModal('edit-transaction');
+    }
+
+    // ==========================================
+    // 8. FORMATAÇÃO E MÁSCARAS
+    // ==========================================
+
+    function applyCurrencyMask() {
+        const inputs = document.querySelectorAll('.currency-input');
+        inputs.forEach(input => {
+            input.addEventListener('keydown', function(e) {
+                if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+            });
+            input.addEventListener('input', function() {
+                if (this.value.indexOf('.') !== -1) {
+                    const parts = this.value.split('.');
+                    if (parts[1].length > 2) {
+                        this.value = parseFloat(this.value).toFixed(2);
+                    }
+                }
+            });
+            input.addEventListener('blur', function() {
+                if (this.value && !isNaN(this.value)) {
+                    this.value = parseFloat(this.value).toFixed(2);
+                }
+            });
+        });
+    }
+
+    // ==========================================
+    // 9. MODAL DE DANGER (RESET/DELETE)
+    // ==========================================
+    
+    let currentDangerAction = null;
+
+    function openDangerConfirm(action) {
+        const formId = action === 'reset' ? 'form-reset' : 'form-delete';
+        const form = document.getElementById(formId);
+        const passwordInput = form.querySelector('input[name="password"]');
+
+        if (!passwordInput.value) {
+            passwordInput.classList.add('ring-2', 'ring-red-500');
+            setTimeout(() => passwordInput.classList.remove('ring-2', 'ring-red-500'), 1000);
+            passwordInput.focus();
+            return;
+        }
+
+        if (action === 'reset') {
+            closeModal('reset-data');
+        } else {
+            closeModal('delete-account');
+        }
+
+        currentDangerAction = action;
+        const titleEl = document.getElementById('danger-title');
+        const msgEl = document.getElementById('danger-message');
+        const iconBg = document.getElementById('danger-icon-bg');
+        const icon = document.getElementById('danger-icon');
+        const border = document.getElementById('danger-modal-border');
+
+        if (action === 'reset') {
+            titleEl.innerText = 'ZERAR TODOS OS DADOS?';
+            msgEl.innerHTML = 'Você perderá <strong>todo o histórico</strong> de transações. <br>Categorias, Contas e Cartões serão excluídos.<br><br>Essa ação não pode ser desfeita.';
+            border.className = 'inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-2 border-yellow-600';
+            iconBg.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-900/50 sm:mx-0 sm:h-10 sm:w-10';
+            icon.className = 'fas fa-exclamation-triangle text-yellow-500 text-lg';
+        } else {
+            titleEl.innerText = 'EXCLUIR CONTA PERMANENTEMENTE?';
+            msgEl.innerHTML = 'Seus dados serão <strong>apagados dos servidores</strong>.<br>Você perderá acesso imediato ao sistema.<br><br><strong>Adeus!</strong>';
+            border.className = 'inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-2 border-red-600';
+            iconBg.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-900/50 sm:mx-0 sm:h-10 sm:w-10';
+            icon.className = 'fas fa-skull text-red-500 text-lg';
+        }
+
+        openModal('danger-confirm');
+    }
+
+    function confirmDangerAction() {
+        if (!currentDangerAction) return;
+        const formId = currentDangerAction === 'reset' ? 'form-reset' : 'form-delete';
+        document.getElementById(formId).submit();
+    }
+
+    // ==========================================
+    // 10. INICIALIZAÇÃO E EVENT LISTENERS GLOBAIS
+    // ==========================================
+
+    document.addEventListener('DOMContentLoaded', () => {
+        applyCurrencyMask();
+        
+        const activeTab = '{{ active_tab|default("") }}';
+        if(activeTab && typeof openTab === 'function') {
+            openTab(activeTab);
+        }
+
+        const avatarInput = document.getElementById('avatarInput');
+        const avatarPreviewImg = document.getElementById('avatar-preview-img');
+        const btnConfirmAvatar = document.getElementById('btn-confirm-avatar');
+        let selectedFile = null;
+
+        if(avatarInput) {
+            avatarInput.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    selectedFile = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        if(avatarPreviewImg) {
+                            avatarPreviewImg.src = event.target.result;
+                            openModal('avatar-preview');
+                        }
+                    };
+                    reader.readAsDataURL(selectedFile);
+                }
+            });
+        }
+
+        if(btnConfirmAvatar) {
+            btnConfirmAvatar.addEventListener('click', function() {
+                if (!selectedFile) return;
+                
+                const originalText = btnConfirmAvatar.innerText;
+                btnConfirmAvatar.disabled = true;
+                btnConfirmAvatar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enviando...';
+                
+                const formData = new FormData();
+                formData.append('avatar', selectedFile);
+                
+                fetch("{{ url_for('settings.upload_avatar') }}", { 
+                    method: 'POST', 
+                    body: formData 
+                })
+                .then(response => {
+                    if (response.ok) { 
+                        window.location.reload(); 
+                    } else { 
+                        alert('Erro ao enviar a imagem. Tente novamente.'); 
+                        btnConfirmAvatar.disabled = false; 
+                        btnConfirmAvatar.innerHTML = originalText;
+                    }
+                })
+                .catch(error => { 
+                    console.error(error); 
+                    alert('Erro de conexão.'); 
+                    btnConfirmAvatar.disabled = false; 
+                    btnConfirmAvatar.innerHTML = originalText;
+                });
+            });
+        }
+
+        // --- LÓGICA DE PARCELAS ---
+        const checkFixedExpense = document.getElementById('check-fixed-expense');
+        const installSelect = document.getElementById('new-expense-installments');
+
+        if(checkFixedExpense && installSelect) {
+            checkFixedExpense.addEventListener('change', function() {
+                if(this.checked) {
+                    installSelect.value = '1';
+                    installSelect.disabled = true;
+                    installSelect.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    installSelect.disabled = false;
+                    installSelect.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            });
+        }
+
+        // --- MANTER POSIÇÃO DA ROLAGEM NOS INTERRUPTORES ---
+        
+        // 1. Restaurar posição
+        const savedScroll = sessionStorage.getItem('pageScrollPos');
+        if (savedScroll) {
+            window.scrollTo(0, parseInt(savedScroll));
+            sessionStorage.removeItem('pageScrollPos');
+        }
+
+        // 2. Salvar posição ao clicar em links de toggle (Auto-Detecção)
+        document.querySelectorAll('a[href*="toggle_fixed"]').forEach(el => {
+            el.addEventListener('click', () => {
+                sessionStorage.setItem('pageScrollPos', window.scrollY);
+            });
+        });
+
+        // 3. Função global caso você use checkbox com onchange (Backup)
+        window.saveScroll = function() {
+            sessionStorage.setItem('pageScrollPos', window.scrollY);
+        };
+
+        // --- EXIBIR NOTIFICAÇÕES (MODAL) ---
+        // Verifica se existem mensagens flash escondidas no DOM
+        const flashContainer = document.getElementById('flash-overlay-container');
+        if (flashContainer) {
+            const messages = flashContainer.querySelectorAll('div');
+            // Mostra apenas a primeira mensagem para não empilhar modais (padrão de UX melhor)
+            if (messages.length > 0) {
+                const firstMsg = messages[0];
+                const category = firstMsg.getAttribute('data-category');
+                const text = firstMsg.getAttribute('data-message');
+                openNotificationModal(category, text);
+            }
+        }
+    });
+</script>

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-slate-800 rounded-lg shadow-xl border border-slate-700 p-6">
+        <h2 class="text-2xl font-bold text-white mb-6">Novo Lançamento</h2>
+
+        <form method="POST" action="{{ url_for('finance.add_transaction') }}" class="space-y-6">
+            
+            <div class="grid grid-cols-2 gap-4">
+                <label class="cursor-pointer">
+                    <input type="radio" name="type" value="despesa" checked class="peer sr-only" onchange="toggleCardField()">
+                    <div class="text-center py-2 rounded-lg border border-slate-600 peer-checked:bg-red-600 peer-checked:border-red-600 peer-checked:text-white text-slate-400 hover:bg-slate-700 transition">
+                        Despesa
+                    </div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="type" value="receita" class="peer sr-only" onchange="toggleCardField()">
+                    <div class="text-center py-2 rounded-lg border border-slate-600 peer-checked:bg-emerald-600 peer-checked:border-emerald-600 peer-checked:text-white text-slate-400 hover:bg-slate-700 transition">
+                        Receita
+                    </div>
+                </label>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-1">Descrição</label>
+                    <input type="text" name="description" required placeholder="Ex: Supermercado"
+                        class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-1">Valor (R$)</label>
+                    <input type="number" step="0.01" name="amount" required placeholder="0,00"
+                        class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-1">Data</label>
+                    <input type="date" name="date" required value="{{ today }}"
+                        class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-1">Categoria</label>
+                    <select name="category_id" required class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div id="expense-options" class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-1">Cartão de Crédito (Opcional)</label>
+                    <select name="card_id" class="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Não (Débito/Dinheiro)</option>
+                        {% for card in cards %}
+                            <option value="{{ card.id }}">{{ card.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-1">Parcelas</label>
+                    <select name="installments" class="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="1">À vista (1x)</option>
+                        {% for i in range(2, 13) %}
+                            <option value="{{ i }}">{{ i }}x</option>
+                        {% endfor %}
+                        <option value="18">18x</option>
+                        <option value="24">24x</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-4 mt-6">
+                <a href="{{ url_for('finance.dashboard') }}" class="px-4 py-2 text-slate-400 hover:text-white transition">Cancelar</a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow transition">
+                    Salvar Lançamento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% include "components/scripts.html" %}
+{% endblock %}

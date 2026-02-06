@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Controle Financeiro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            750: '#2d3748', // Custom dark shade
+                            850: '#1a202c',
+                            950: '#0f172a' 
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html { overflow-y: scroll; }
+        /* Custom Scrollbar for nicer look */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 font-sans antialiased min-h-screen flex flex-col">
+
+    <nav class="bg-slate-800 border-b border-slate-700 sticky top-0 z-40 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{{ url_for('finance.dashboard') }}" class="flex items-center space-x-2 group">
+                        <div class="bg-blue-600 p-2 rounded-lg group-hover:bg-blue-500 transition">
+                            <i class="fas fa-wallet text-white text-xl"></i>
+                        </div>
+                        <span class="text-xl font-bold text-white tracking-wide group-hover:text-blue-400 transition">Financeiro</span>
+                    </a>
+                </div>
+
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-center space-x-6">
+                        {% if current_user.is_authenticated %}
+                            
+                            <div class="flex items-center space-x-3 bg-slate-700/50 pr-4 pl-1.5 py-1.5 rounded-full border border-slate-600/50 hover:bg-slate-700 transition cursor-default">
+                                {% if current_user.avatar_path %}
+                                    <img src="{{ url_for('static', filename='uploads/' + current_user.avatar_path) }}" alt="Avatar" class="h-8 w-8 rounded-full object-cover border-2 border-slate-500 shadow-sm">
+                                {% else %}
+                                    <div class="h-8 w-8 rounded-full bg-slate-600 flex items-center justify-center border-2 border-slate-500 text-slate-400">
+                                        <i class="fas fa-user text-xs"></i>
+                                    </div>
+                                {% endif %}
+                                <span class="text-sm font-bold tracking-wide text-white">
+                                    {{ current_user.name }} {{ current_user.last_name }}
+                                </span>
+                            </div>
+
+                            <div class="flex items-center space-x-4 border-l border-slate-700 pl-6 h-8">
+                                <a href="{{ url_for('settings.index') }}" class="text-slate-400 hover:text-white transition transform hover:scale-110" title="Configurações">
+                                    <i class="fas fa-cog text-lg"></i>
+                                </a>
+                                <a href="{{ url_for('auth.logout') }}" class="text-red-400 hover:text-red-300 transition transform hover:scale-110" title="Sair">
+                                    <i class="fas fa-sign-out-alt text-lg"></i>
+                                </a>
+                            </div>
+
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="-mr-2 flex md:hidden">
+                    {% if current_user.is_authenticated %}
+                    <button type="button" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="bg-slate-800 inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 focus:outline-none">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="hidden md:hidden bg-slate-800 border-t border-slate-700" id="mobile-menu">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                {% if current_user.is_authenticated %}
+                    <div class="px-3 py-3 border-b border-slate-700 mb-2 flex items-center space-x-3">
+                        {% if current_user.avatar_path %}
+                            <img src="{{ url_for('static', filename='uploads/' + current_user.avatar_path) }}" alt="Avatar" class="h-10 w-10 rounded-full object-cover border-2 border-slate-600">
+                        {% else %}
+                            <div class="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center border-2 border-slate-600 text-slate-400">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <p class="text-[10px] text-slate-500 uppercase font-bold">Logado como</p>
+                            <p class="text-white font-bold text-sm">{{ current_user.name }} {{ current_user.last_name }}</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('settings.index') }}" class="text-slate-300 hover:bg-slate-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                        <i class="fas fa-cog mr-2 w-5"></i> Configurações
+                    </a>
+                    <a href="{{ url_for('auth.logout') }}" class="text-red-400 hover:bg-red-900/30 block px-3 py-2 rounded-md text-base font-medium">
+                        <i class="fas fa-sign-out-alt mr-2 w-5"></i> Sair
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% if request.endpoint in ['auth.login', 'auth.register'] %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 rounded-md p-4 flex items-center shadow-lg transform transition-all hover:scale-[1.01]
+                            {% if category == 'success' %} bg-emerald-900/50 border border-emerald-500 text-emerald-200
+                            {% elif category == 'danger' %} bg-red-900/50 border border-red-500 text-red-200
+                            {% elif category == 'warning' %} bg-yellow-900/50 border border-yellow-500 text-yellow-200
+                            {% else %} bg-blue-900/50 border border-blue-500 text-blue-200 {% endif %}">
+                            <i class="fas 
+                                {% if category == 'success' %} fa-check-circle
+                                {% elif category == 'danger' %} fa-times-circle
+                                {% elif category == 'warning' %} fa-exclamation-triangle
+                                {% else %} fa-info-circle {% endif %} mr-3 text-lg"></i>
+                            <span class="font-medium">{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div id="flash-overlay-container" class="hidden">
+                        {% for category, message in messages %}
+                            <div data-category="{{ category }}" data-message="{{ message }}"></div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <main class="flex-grow py-6 px-4 sm:px-6 lg:px-8 w-full">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-slate-950 border-t border-slate-800 py-3 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-slate-500 text-xs">
+                &copy; 2026 Sistema de Controle Financeiro - Desenvolvido por 
+                <a href="https://www.henrique.tec.br" target="_blank" class="text-blue-500 hover:text-blue-400 font-bold transition decoration-blue-500/30 hover:underline">Henrique Fagundes</a>
+            </p>
+        </div>
+    </footer>
+    
+    {% include 'components/all_modals.html' %}
+
+    <div id="modal-notification" class="hidden fixed inset-0 z-[70] overflow-y-auto">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-80 transition-opacity" onclick="closeModal('notification')"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full border border-slate-600">
+                <div class="bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div id="notif-icon-bg" class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10 transition-colors duration-300">
+                            <i id="notif-icon" class="fas text-lg"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                            <h3 class="text-lg leading-6 font-medium text-white" id="notif-title"></h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-slate-300" id="notif-message"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-900/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-700">
+                    <button id="notif-btn" type="button" onclick="closeModal('notification')" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

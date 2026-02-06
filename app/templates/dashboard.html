@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto space-y-8">
+    
+    {% include "components/header_nav.html" %}
+
+    {% include "components/summary_cards.html" %}
+
+    {% include "components/account_cards.html" %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="space-y-6">
+            
+            {% include "components/credit_cards.html" %}
+
+            {% include "components/fixed_items.html" %}
+
+        </div>
+
+        <div class="lg:col-span-2">
+            
+            {% include "components/transactions_table.html" %}
+            
+        </div>
+    </div>
+</div>
+
+{% include "components/all_modals.html" %}
+
+{% include "components/scripts.html" %}
+
+{% endblock %}

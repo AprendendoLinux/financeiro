@@ -1,0 +1,23 @@
+# Framework Web
+Flask==3.0.0
+
+# Banco de Dados e ORM
+SQLAlchemy==2.0.25
+Flask-SQLAlchemy==3.1.1
+mysql-connector-python==8.2.0
+Flask-Migrate==4.0.5
+
+# Autenticação e Segurança
+Flask-Login==0.6.3
+Werkzeug==3.0.1
+email-validator==2.1.0
+
+# Variáveis de Ambiente
+python-dotenv==1.0.0
+
+# Servidor de Aplicação
+gunicorn==21.2.0
+
+# Utilitários
+pydantic==2.5.3
+python-dateutil==2.8.2

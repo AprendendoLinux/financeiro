@@ -1,0 +1,96 @@
+<div class="space-y-6">
+    <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+        <div class="px-4 py-3 bg-slate-900 border-b border-slate-700 flex justify-between items-center">
+            <h3 class="text-sm font-bold text-red-400 uppercase"><i class="fas fa-calendar-times mr-2"></i> Despesas Fixas</h3>
+        </div>
+        <div class="p-4 space-y-3">
+            {% for item in fixed_expenses %}
+            <div class="flex justify-between items-center p-3 rounded-lg border transition-all 
+                        {% if item.is_paid %}border-red-500/50 bg-red-900/20{% else %}border-slate-700 bg-slate-750{% endif %}">
+                
+                <div class="{% if item.is_paid %}opacity-75{% endif %}">
+                    <div class="text-sm font-bold text-white">{{ item.obj.description }}</div>
+                    <div class="text-xs text-slate-400">
+                        Dia {{ item.obj.day_of_month }} • R$ {{ item.obj.amount|currency }}
+                        {% if item.obj.card_id %}
+                            <span class="ml-1 text-slate-400" title="No Cartão de Crédito"><i class="fas fa-credit-card"></i></span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                     {% if item.is_paid %}
+                        <span class="text-xs font-bold text-red-400 uppercase mr-2">Pago</span>
+                     {% endif %}
+
+                    <button data-id="{{ item.obj.id }}" 
+                            data-desc="{{ item.obj.description }}" 
+                            data-amount="{{ item.obj.amount }}" 
+                            data-day="{{ item.obj.day_of_month }}" 
+                            data-cat="{{ item.obj.category_id }}" 
+                            data-acc="{{ item.obj.account_id }}"
+                            data-card="{{ item.obj.card_id or '' }}"
+                            data-method="{{ 'credit' if item.obj.card_id else 'account' }}"
+                            onclick="openEditFixed(this)" 
+                            class="text-slate-500 hover:text-blue-400 p-1" title="Editar">
+                        <i class="fas fa-pen text-xs"></i>
+                    </button>
+
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <a href="{{ url_for('finance.toggle_fixed', type_fixed='expense', id=item.obj.id, month=current_month, year=current_year) }}">
+                            <input type="checkbox" class="sr-only peer" {% if item.is_paid %}checked{% endif %}>
+                            <div class="w-9 h-5 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500"></div>
+                        </a>
+                    </label>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-xs text-slate-500 text-center py-2">Nenhuma despesa fixa.</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+        <div class="px-4 py-3 bg-slate-900 border-b border-slate-700 flex justify-between items-center">
+            <h3 class="text-sm font-bold text-emerald-400 uppercase"><i class="fas fa-calendar-check mr-2"></i> Receitas Fixas</h3>
+        </div>
+        <div class="p-4 space-y-3">
+            {% for item in fixed_revenues %}
+            <div class="flex justify-between items-center p-3 rounded-lg border transition-all
+                        {% if item.is_received %}border-emerald-500/50 bg-emerald-900/20{% else %}border-slate-700 bg-slate-750{% endif %}">
+                
+                <div class="{% if item.is_received %}opacity-75{% endif %}">
+                    <div class="text-sm font-bold text-white">{{ item.obj.description }}</div>
+                    <div class="text-xs text-slate-400">Dia {{ item.obj.day_of_month }} • R$ {{ item.obj.amount|currency }}</div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                     {% if item.is_received %}
+                        <span class="text-xs font-bold text-emerald-400 uppercase mr-2">Recebido</span>
+                     {% endif %}
+
+                    <button data-id="{{ item.obj.id }}" 
+                            data-desc="{{ item.obj.description }}" 
+                            data-amount="{{ item.obj.amount }}" 
+                            data-day="{{ item.obj.day_of_month }}" 
+                            data-cat="{{ item.obj.category_id }}" 
+                            data-acc="{{ item.obj.account_id }}"
+                            onclick="openEditRevenue(this)" 
+                            class="text-slate-500 hover:text-blue-400 p-1" title="Editar">
+                        <i class="fas fa-pen text-xs"></i>
+                    </button>
+                    
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <a href="{{ url_for('finance.toggle_fixed', type_fixed='revenue', id=item.obj.id, month=current_month, year=current_year) }}">
+                            <input type="checkbox" class="sr-only peer" {% if item.is_received %}checked{% endif %}>
+                            <div class="w-9 h-5 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </a>
+                    </label>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-xs text-slate-500 text-center py-2">Nenhuma receita fixa.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>

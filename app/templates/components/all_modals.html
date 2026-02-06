@@ -1,0 +1,425 @@
+<div id="modal-transfer" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('transfer')"></div>
+        <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-600">
+            <form action="{{ url_for('finance.transfer_values') }}" method="POST" class="p-6 space-y-4">
+                <h3 class="text-lg font-bold text-white mb-4"><i class="fas fa-exchange-alt mr-2 text-blue-400"></i> Transferência</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">De (Origem)</label>
+                        <select name="source_id" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm">
+                            {% for acc in current_user.accounts %}
+                                <option value="{{ acc.id }}">{{ acc.name }} (R$ {{ "%.2f"|format(acc.current_balance)|replace('.', ',') }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Para (Destino)</label>
+                        <select name="target_id" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm">
+                            {% for acc in current_user.accounts %}
+                                <option value="{{ acc.id }}">{{ acc.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Valor</label>
+                        <input type="number" step="0.01" name="amount" required class="currency-input w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Data</label>
+                        <input type="date" name="date" required value="{{ today }}" max="{{ today }}" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeModal('transfer')" class="px-4 py-2 text-slate-400 hover:text-white text-sm">Cancelar</button>
+                    <button type="submit" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded text-sm border border-slate-600">Transferir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-pay-card" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('pay-card')"></div>
+        <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full border border-slate-600">
+            <form action="{{ url_for('finance.pay_card_invoice') }}" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="card_id" id="pay-card-id">
+                
+                <div class="text-center mb-4">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-sky-900/50 mb-3">
+                        <i class="fas fa-file-invoice-dollar text-sky-400 text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">Pagar Fatura</h3>
+                    <p id="pay-card-name" class="text-sm text-sky-300 font-bold mt-1"></p>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Valor do Pagamento</label>
+                    <input type="number" step="0.01" name="amount" id="pay-card-amount" required class="currency-input w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white font-bold text-lg text-center focus:border-sky-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Conta de Origem</label>
+                    <select name="account_id" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm">
+                        {% for acc in current_user.accounts %}
+                            <option value="{{ acc.id }}">{{ acc.name }} (R$ {{ "%.2f"|format(acc.current_balance) }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Data do Pagamento</label>
+                    <input type="date" name="date" required value="{{ today }}" max="{{ today }}" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm text-center">
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeModal('pay-card')" class="px-4 py-2 text-slate-400 hover:text-white text-sm">Cancelar</button>
+                    <button type="submit" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded text-sm w-full border border-slate-600">Confirmar Pagamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-advance" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('advance')"></div>
+        <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-600">
+            <form action="{{ url_for('finance.advance_card_installments') }}" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="card_id" id="advance-card-id">
+                
+                <h3 class="text-lg font-bold text-white mb-2"><i class="fas fa-forward mr-2 text-sky-400"></i> Antecipar Parcelas</h3>
+                <p id="advance-card-name" class="text-sm font-bold text-sky-300 mb-2"></p>
+                
+                <div class="max-h-60 overflow-y-auto border border-slate-700 rounded bg-slate-900 p-2 space-y-2" id="advance-list">
+                    <p class="text-center text-slate-500 text-xs py-4">Carregando parcelas...</p>
+                </div>
+
+                <div class="flex justify-between items-center pt-2 border-t border-slate-700">
+                    <div>
+                        <span class="text-xs text-slate-400 uppercase font-bold">Total Selecionado</span>
+                        <p class="text-xl font-bold text-white" id="advance-total">R$ 0,00</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeModal('advance')" class="px-4 py-2 text-slate-400 hover:text-white">Cancelar</button>
+                        <button type="submit" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded shadow-lg disabled:opacity-50 disabled:cursor-not-allowed border border-slate-600">Antecipar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-edit-transaction" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('edit-transaction')"></div>
+        <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full border border-slate-600">
+            <form id="form-edit-trans" method="POST" class="p-6 space-y-4">
+                <h3 class="text-lg font-bold text-white mb-4">Editar Lançamento</h3>
+                
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Descrição</label>
+                    <input type="text" name="description" id="edit-trans-desc" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
+                </div>
+                
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Valor</label>
+                    <input type="number" step="0.01" name="amount" id="edit-trans-amount" required class="currency-input w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeModal('edit-transaction')" class="px-4 py-2 text-slate-400 hover:text-white text-sm">Cancelar</button>
+                    <button type="submit" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded text-sm border border-slate-600">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-new-revenue" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('new-revenue')"></div>
+        <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-600">
+            <form action="{{ url_for('finance.add_transaction') }}" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="type" value="receita">
+                <input type="hidden" name="payment_mode" value="account">
+                
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center">
+                    <div class="w-8 h-8 rounded-full bg-emerald-900/50 flex items-center justify-center mr-3 border border-emerald-500/30">
+                        <i class="fas fa-plus text-emerald-400"></i>
+                    </div>
+                    Nova Receita
+                </h3>
+
+                <input type="text" name="description" placeholder="Descrição (ex: Salário)" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500 focus:border-emerald-500">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" step="0.01" name="amount" placeholder="0,00" required class="currency-input w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white font-bold text-emerald-400 placeholder-slate-600 focus:border-emerald-500">
+                    <input type="date" name="date" id="date-new-revenue" required value="{{ today }}" max="{{ today }}" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-center focus:border-emerald-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <select name="category_id" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-emerald-500">
+                        <option value="" disabled selected>Categoria</option>
+                        {% for cat in current_user.categories if cat.type == 'receita' %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="account_id" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-emerald-500">
+                        {% for acc in current_user.accounts %}
+                            <option value="{{ acc.id }}">{{ acc.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mt-2">
+                    <label class="flex items-center space-x-2 cursor-pointer group">
+                        <input type="checkbox" name="is_fixed" onchange="toggleDateLimit(this, 'date-new-revenue')" class="rounded bg-slate-700 border-slate-600 text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                        <span class="text-sm text-slate-400 group-hover:text-emerald-400 transition">É uma receita fixa? (Repetir todo mês)</span>
+                    </label>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeModal('new-revenue')" class="px-4 py-2 text-slate-400 hover:text-white text-sm">Cancelar</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded text-sm shadow-lg shadow-emerald-900/20">Adicionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-new-expense" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('new-expense')"></div>
+        <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-600">
+            <form action="{{ url_for('finance.add_transaction') }}" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="type" value="despesa">
+                
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center">
+                    <div class="w-8 h-8 rounded-full bg-red-900/50 flex items-center justify-center mr-3 border border-red-500/30">
+                        <i class="fas fa-minus text-red-400"></i>
+                    </div>
+                    Nova Despesa
+                </h3>
+
+                <div class="grid grid-cols-2 gap-4 mb-2">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="payment_mode" value="account" checked class="peer sr-only" onchange="toggleExpenseMode()">
+                        <div class="text-center py-2 rounded border border-slate-600 peer-checked:bg-slate-700 peer-checked:border-slate-500 peer-checked:text-white text-slate-400 text-sm hover:bg-slate-700 transition">
+                            <i class="fas fa-wallet mr-2"></i> Débito
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="payment_mode" value="credit" class="peer sr-only" onchange="toggleExpenseMode()" {% if not current_user.cards %}disabled{% endif %}>
+                        <div class="text-center py-2 rounded border border-slate-600 peer-checked:bg-slate-700 peer-checked:border-slate-500 peer-checked:text-white text-slate-400 text-sm hover:bg-slate-700 transition {% if not current_user.cards %}opacity-50 cursor-not-allowed{% endif %}">
+                            <i class="fas fa-credit-card mr-2"></i> Crédito
+                        </div>
+                    </label>
+                </div>
+
+                <input type="text" name="description" placeholder="Descrição (ex: Supermercado)" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500 focus:border-red-500">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" step="0.01" name="amount" placeholder="0,00" required class="currency-input w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white font-bold text-red-400 placeholder-slate-600 focus:border-red-500">
+                    <input type="date" name="date" id="date-new-expense" required value="{{ today }}" max="{{ today }}" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-center focus:border-red-500">
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <select name="category_id" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-red-500">
+                        <option value="" disabled selected>Categoria</option>
+                        {% for cat in current_user.categories if cat.type == 'despesa' %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div id="container-account">
+                    <select name="account_id" id="field-account" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-red-500" required>
+                        {% for acc in current_user.accounts %}
+                            <option value="{{ acc.id }}">{{ acc.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div id="container-credit" class="hidden grid grid-cols-2 gap-4">
+                    <select name="card_id" id="field-card" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-slate-500">
+                        {% for card in current_user.cards %}
+                            <option value="{{ card.id }}">{{ card.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="installments" id="new-expense-installments" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-slate-500">
+                        <option value="1">À vista (1x)</option>
+                        {% for i in range(2, 13) %}
+                            <option value="{{ i }}">{{ i }}x</option>
+                        {% endfor %}
+                        <option value="18">18x</option>
+                        <option value="24">24x</option>
+                    </select>
+                </div>
+
+                <div class="mt-2">
+                    <label class="flex items-center space-x-2 cursor-pointer group">
+                        <input type="checkbox" name="is_fixed" id="check-fixed-expense" onchange="toggleDateLimit(this, 'date-new-expense')" class="rounded bg-slate-700 border-slate-600 text-red-600 focus:ring-red-500 w-4 h-4">
+                        <span class="text-sm text-slate-400 group-hover:text-red-400 transition">É uma despesa fixa? (Repetir todo mês)</span>
+                    </label>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeModal('new-expense')" class="px-4 py-2 text-slate-400 hover:text-white text-sm">Cancelar</button>
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded text-sm shadow-lg shadow-red-900/20">Adicionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-edit-fixed" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('edit-fixed')"></div>
+        <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
+            <form id="form-edit-fixed" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="origin" value="dashboard">
+                <h3 class="text-lg font-medium text-white">Editar Despesa Fixa</h3>
+                
+                <div class="grid grid-cols-2 gap-4 mb-2">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="payment_method" value="account" class="peer sr-only" id="edit-method-account" onchange="toggleFixedMethod('edit')">
+                        <div class="text-center py-1 rounded border border-slate-600 peer-checked:bg-slate-600 peer-checked:text-white text-slate-400 text-xs hover:bg-slate-700 transition">
+                            <i class="fas fa-wallet mr-1"></i> Conta
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="payment_method" value="credit" class="peer sr-only" id="edit-method-credit" onchange="toggleFixedMethod('edit')" {% if not current_user.cards %}disabled{% endif %}>
+                        <div class="text-center py-1 rounded border border-slate-600 peer-checked:bg-slate-600 peer-checked:text-white text-slate-400 text-xs hover:bg-slate-700 transition {% if not current_user.cards %}opacity-50 cursor-not-allowed{% endif %}">
+                            <i class="fas fa-credit-card mr-1"></i> Cartão
+                        </div>
+                    </label>
+                </div>
+
+                <input type="text" name="description" id="edit-fix-desc" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" step="0.01" name="amount" id="edit-fix-amount" required class="currency-input bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
+                    <select name="day" id="edit-fix-day" required class="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-center">
+                        {% for i in range(1, 32) %}
+                            <option value="{{ i }}">{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <select name="category_id" id="edit-fix-cat" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
+                    {% for cat in current_user.categories if cat.type == 'despesa' %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+                
+                <div id="edit-container-account">
+                    <select name="account_id" id="edit-fix-acc" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
+                        {% for acc in current_user.accounts %}
+                            <option value="{{ acc.id }}">{{ acc.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div id="edit-container-credit" class="hidden">
+                    <select name="card_id" id="edit-fix-card" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-slate-500">
+                        {% for card in current_user.cards %}
+                            <option value="{{ card.id }}">{{ card.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="flex justify-between items-center pt-2">
+                    <a href="#" id="btn-delete-fixed-modal" class="text-red-500 hover:text-red-400 text-sm font-bold" onclick="return confirm('Tem certeza que deseja encerrar esta despesa fixa? Os lançamentos passados não serão apagados.')">Excluir</a>
+                    
+                    <div class="flex space-x-3">
+                        <button type="button" onclick="closeModal('edit-fixed')" class="px-4 py-2 text-slate-400 hover:text-white">Cancelar</button>
+                        <button type="submit" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded border border-slate-600">Salvar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-edit-revenue" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('edit-revenue')"></div>
+        <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
+            <form id="form-edit-revenue" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="origin" value="dashboard">
+                <h3 class="text-lg font-medium text-white">Editar Receita Fixa</h3>
+                <input type="text" name="description" id="edit-rev-desc" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" step="0.01" name="amount" id="edit-rev-amount" required class="currency-input bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
+                    <select name="day" id="edit-rev-day" required class="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-center">
+                        {% for i in range(1, 32) %}
+                            <option value="{{ i }}">{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <select name="category_id" id="edit-rev-cat" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
+                    {% for cat in current_user.categories if cat.type == 'receita' %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="account_id" id="edit-rev-acc" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
+                    {% for acc in current_user.accounts %}
+                        <option value="{{ acc.id }}">{{ acc.name }}</option>
+                    {% endfor %}
+                </select>
+                
+                <div class="flex justify-between items-center pt-2">
+                    <a href="#" id="btn-delete-revenue-modal" class="text-red-500 hover:text-red-400 text-sm font-bold" onclick="return confirm('Tem certeza que deseja encerrar esta receita fixa?')">Excluir</a>
+                    
+                    <div class="flex space-x-3">
+                        <button type="button" onclick="closeModal('edit-revenue')" class="px-4 py-2 text-slate-400 hover:text-white">Cancelar</button>
+                        <button type="submit" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded border border-slate-600">Salvar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-generic-delete" class="hidden fixed inset-0 z-[60] overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-80 transition-opacity" onclick="closeModal('generic-delete')"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+
+        <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full border border-slate-600">
+            <div class="bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-900/50 border border-red-500/30 sm:mx-0 sm:h-10 sm:w-10">
+                        <i class="fas fa-trash text-red-500"></i>
+                    </div>
+                    
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-white" id="delete-modal-title">
+                            Excluir Item
+                        </h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-slate-300" id="delete-modal-message">
+                                Tem certeza que deseja realizar esta ação?
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-slate-900/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-700">
+                <a href="#" id="btn-confirm-delete" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    Sim, Excluir
+                </a>
+                
+                <button type="button" onclick="closeModal('generic-delete')" class="mt-3 w-full inline-flex justify-center rounded-md border border-slate-600 shadow-sm px-4 py-2 bg-slate-800 text-base font-medium text-slate-300 hover:text-white hover:bg-slate-700 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

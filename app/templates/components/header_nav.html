@@ -1,0 +1,36 @@
+<div class="flex flex-col md:flex-row justify-between items-center bg-slate-800 p-6 rounded-lg shadow border border-slate-700">
+    <div class="flex flex-col">
+        <div class="flex items-center space-x-3">
+            <a href="{{ url_for('finance.dashboard', month=current_month-1 if current_month > 1 else 12, year=current_year if current_month > 1 else current_year-1) }}" class="text-slate-400 hover:text-white transition transform hover:scale-110">
+                <i class="fas fa-chevron-left text-xl"></i>
+            </a>
+            
+            <h1 class="text-2xl font-bold text-white uppercase tracking-wide">{{ month_name }}/{{ current_year }}</h1>
+            
+            {% if allow_next %}
+            <a href="{{ url_for('finance.dashboard', month=current_month+1 if current_month < 12 else 1, year=current_year if current_month < 12 else current_year+1) }}" class="text-slate-400 hover:text-white transition transform hover:scale-110">
+                <i class="fas fa-chevron-right text-xl"></i>
+            </a>
+            {% else %}
+            <span class="text-slate-700 cursor-not-allowed" title="Limite de navegação alcançado.">
+                <i class="fas fa-chevron-right text-xl"></i>
+            </span>
+            {% endif %}
+        </div>
+        <p class="text-slate-400 text-sm mt-1 ml-1">Visão Geral do Mês</p>
+    </div>
+
+    <div class="flex space-x-3 mt-4 md:mt-0">
+        <button onclick="openModal('new-revenue')" class="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg shadow transition transform hover:scale-105">
+            <i class="fas fa-plus mr-2"></i> Receita
+        </button>
+        
+        <button onclick="openModal('new-expense')" class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow transition transform hover:scale-105">
+            <i class="fas fa-minus mr-2"></i> Despesa
+        </button>
+
+        <button onclick="openModal('transfer')" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow transition transform hover:scale-105">
+            <i class="fas fa-exchange-alt mr-2"></i> Transferir
+        </button>
+    </div>
+</div>

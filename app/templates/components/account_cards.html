@@ -1,0 +1,23 @@
+<div class="space-y-2">
+    <h3 class="text-sm font-bold text-slate-400 uppercase ml-1 flex items-center">
+        <i class="fas fa-wallet mr-2"></i> Minhas Contas
+    </h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {% for acc in current_user.accounts %}
+        <div class="bg-slate-800 rounded-lg border border-slate-700 p-4 hover:border-slate-500 transition shadow-md">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h4 class="text-white font-bold truncate">{{ acc.name }}</h4>
+                    <p class="text-xs text-slate-500 mt-1">Saldo Atual</p>
+                    <p class="text-lg font-bold {% if acc.current_balance < 0 %}text-red-400{% else %}text-emerald-400{% endif %} mt-1">
+                        R$ {{ acc.current_balance|currency }}
+                    </p>
+                </div>
+                <div class="bg-slate-700 p-2 rounded-full text-slate-300">
+                    <i class="fas fa-university"></i>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
