@@ -176,7 +176,7 @@ def edit_card(id):
     card.due_day = int(request.form.get('due_day'))
     
     db.session.commit()
-    flash('Cartão atualizado!', 'success')
+    flash('Cartão atualizada!', 'success')
     return redirect(url_for('settings.index', tab='cards'))
 
 @settings_bp.route('/settings/card/delete/<int:id>')
@@ -462,24 +462,14 @@ def change_password():
 @login_required
 def reset_data():
     password = request.form.get('password')
-    start_option = request.form.get('start_option')
-    retro_date_str = request.form.get('retro_date')
+    # ALTERAÇÃO: Removido start_option e retro_date. Data sempre é HOJE.
 
     if not current_user.check_password(password):
         flash('Senha incorreta. Operação cancelada.', 'danger')
         return redirect(url_for('settings.index', tab='account'))
 
-    if start_option == 'retro':
-        if not retro_date_str:
-            flash('Data retroativa inválida.', 'danger')
-            return redirect(url_for('settings.index', tab='account'))
-        try:
-            new_start_date = datetime.strptime(retro_date_str, '%Y-%m-%d').date()
-        except ValueError:
-            flash('Formato de data inválido.', 'danger')
-            return redirect(url_for('settings.index', tab='account'))
-    else:
-        new_start_date = date.today()
+    # ALTERAÇÃO: Força a data de início para ser sempre HOJE
+    new_start_date = date.today()
 
     try:
         Transaction.query.filter_by(user_id=current_user.id).delete()

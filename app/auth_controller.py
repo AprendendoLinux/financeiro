@@ -69,14 +69,8 @@ def register():
         except ValueError:
             birth_date = None
 
-        start_date_str = request.form.get('start_date')
-        if start_date_str:
-            try:
-                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            except ValueError:
-                start_date = date.today()
-        else:
-            start_date = date.today()
+        # ALTERAÇÃO: Força a data de início para ser sempre HOJE
+        start_date = date.today()
         
         # Validações
         if not validate_email_format(email):
