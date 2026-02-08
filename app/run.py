@@ -31,4 +31,5 @@ app.jinja_env.filters['trim_slash'] = trim_slash
 # -----------------------------------
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    # Alterado para '::' para suportar IPv6 (e IPv4 em dual-stack)
+    app.run(host='::', port=5000)
