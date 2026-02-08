@@ -1,87 +1,127 @@
-<div class="space-y-4">
-    <h3 class="text-sm font-bold text-sky-400 uppercase ml-1 flex items-center">
-        <i class="fas fa-credit-card mr-2"></i> Faturas de Cartão
-    </h3>
-
-    {# Define se estamos vendo o mês atual #}
-    {% set is_current_view = (current_month == today.month and current_year == today.year) %}
-    
-    {% for card in cards_data %}
-    <div class="bg-slate-800 rounded-lg border {% if card.is_paid %}border-emerald-500/30{% else %}border-sky-500/30{% endif %} overflow-hidden shadow-lg transition hover:border-sky-500/60">
-        <div class="p-4">
-            <div class="flex justify-between items-start mb-2">
-                <div>
-                    <h4 class="text-white font-bold text-lg">{{ card.obj.name }}</h4>
-                    <div class="text-xs text-slate-400 mt-1 space-y-0.5">
-                        <p class="flex items-center">
-                            <i class="far fa-calendar-alt mr-1.5 w-3"></i> 
-                            Vencimento: <span class="text-slate-200 ml-1 font-medium">{{ card.full_due_date }}</span>
-                        </p>
-                        <p class="flex items-center">
-                            <i class="fas fa-lock mr-1.5 w-3"></i> 
-                            Fechamento: <span class="text-slate-200 ml-1 font-medium">{{ card.full_closing_date }}</span>
-                        </p>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <p class="text-xs text-slate-400 uppercase font-bold mb-1">Valor da Fatura</p>
-                    <p class="text-xl font-bold {% if card.is_paid %}text-emerald-400{% else %}text-white{% endif %}">
-                        R$ {{ "%.2f"|format(card.invoice_amount)|replace('.', ',') }}
-                    </p>
-                    {% if card.is_paid %}
-                        <span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-900/30 text-emerald-400 border border-emerald-900/50">PAGA</span>
-                    {% else %}
-                        <span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-sky-900/30 text-sky-300 border border-sky-900/50">ABERTA</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="mt-4 mb-4">
-                <div class="flex justify-between text-xs mb-1">
-                    <span class="text-slate-400">Limite Utilizado ({{ "%.0f"|format(card.percent) }}%)</span>
-                    <span class="text-slate-300">R$ {{ "%.2f"|format(card.used)|replace('.', ',') }} / {{ "%.0f"|format(card.limit)|replace('.', ',') }}</span>
-                </div>
-                <div class="w-full bg-slate-700 rounded-full h-2">
-                    <div class="bg-sky-500 h-2 rounded-full transition-all duration-500" style="width: {{ card.percent }}%"></div>
-                </div>
-                <div class="mt-1 text-right">
-                    <span class="text-[10px] text-slate-500">Disponível: <span class="text-slate-300">R$ {{ "%.2f"|format(card.available)|replace('.', ',') }}</span></span>
-                </div>
-            </div>
-
-            <div class="pt-3 border-t border-slate-700 flex justify-between items-center">
-                {% if card.is_paid %}
-                    <span class="text-emerald-500 text-xs font-bold flex items-center">
-                        <i class="fas fa-check-circle mr-1"></i> Fatura Paga / Zerada
-                    </span>
-                    <button onclick="openAdvanceModal('{{ card.obj.id }}', '{{ card.obj.name }}')" 
-                            class="text-slate-400 hover:text-white text-xs underline disabled:opacity-30 disabled:cursor-not-allowed"
-                            {% if not is_current_view %}disabled title="Disponível apenas no mês atual"{% endif %}>
-                        Antecipar Parcelas
-                    </button>
-                {% else %}
-                    <span class="text-sky-400 text-xs font-bold mr-auto flex items-center">
-                        <i class="fas fa-clock mr-1"></i> Pendente
-                    </span>
-                    
-                    <button onclick="openAdvanceModal('{{ card.obj.id }}', '{{ card.obj.name }}')" 
-                            class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-bold py-1.5 px-3 rounded transition mr-2 disabled:opacity-30 disabled:cursor-not-allowed"
-                            {% if not is_current_view %}disabled title="Disponível apenas no mês atual"{% endif %}>
-                        Adiantar
-                    </button>
-
-                    <button onclick="openPayCardModal('{{ card.obj.id }}', '{{ card.obj.name }}', '{{ card.invoice_amount }}')" 
-                            class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold py-1.5 px-3 rounded transition shadow border border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                            {% if not is_current_view %}disabled title="Disponível apenas no mês atual"{% endif %}>
-                        Pagar
-                    </button>
-                {% endif %}
-            </div>
+<div class="h-full flex flex-col">
+    <div class="flex items-center justify-between mb-3 px-1">
+        <h3 class="text-sm font-bold text-sky-400 uppercase flex items-center">
+            <i class="fas fa-credit-card mr-2"></i> Faturas de Cartão
+        </h3>
+        <div class="text-xs text-slate-500 font-mono bg-slate-800 px-2 py-1 rounded-full border border-slate-700">
+            <span id="card-counter">1</span>/{{ cards_data|length }}
         </div>
     </div>
-    {% else %}
-    <div class="p-4 bg-slate-800 rounded border border-slate-700 text-center text-slate-500 text-sm">
-        Nenhum cartão cadastrado.
+
+    {% set is_current_view = (current_month == today.month and current_year == today.year) %}
+
+    <div class="relative w-full flex-1 rounded-xl shadow-2xl overflow-hidden group border border-slate-700/50">
+        
+        <button onclick="moveCarousel('card', -1)" class="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-3 text-white/50 hover:text-white hover:bg-black/20 rounded-full transition backdrop-blur-sm">
+            <i class="fas fa-chevron-left text-xl"></i>
+        </button>
+        <button onclick="moveCarousel('card', 1)" class="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-3 text-white/50 hover:text-white hover:bg-black/20 rounded-full transition backdrop-blur-sm">
+            <i class="fas fa-chevron-right text-xl"></i>
+        </button>
+
+        <div class="relative w-full h-full min-h-[220px]">
+            {% for card in cards_data|sort(attribute='invoice_amount', reverse=True) %}
+            
+            {# --- Lógica Visual e Ícones --- #}
+            {% set card_name_lower = card.obj.name|lower %}
+            {% set brand_icon = "fa-credit-card" %}
+            
+            {% if 'visa' in card_name_lower %}
+                {% set brand_icon = "fa-cc-visa" %}
+            {% elif 'master' in card_name_lower %}
+                {% set brand_icon = "fa-cc-mastercard" %}
+            {% elif 'amex' in card_name_lower or 'american' in card_name_lower %}
+                {% set brand_icon = "fa-cc-amex" %}
+            {% endif %}
+
+            {# Cores baseadas no status #}
+            {% if card.is_paid %}
+                {% set bg_card = "bg-gradient-to-br from-emerald-800 to-emerald-950" %}
+                {% set status_text = "Fatura Paga" %}
+                {% set status_class = "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" %}
+                {% set bar_color = "bg-emerald-400" %}
+            {% else %}
+                {% set bg_card = "bg-gradient-to-br from-slate-700 to-slate-900" %}
+                {% if 'nubank' in card_name_lower %}{% set bg_card = "bg-gradient-to-br from-purple-900 to-purple-950" %}{% endif %}
+                {% if 'itaú' in card_name_lower %}{% set bg_card = "bg-gradient-to-br from-orange-800 to-slate-900" %}{% endif %}
+                
+                {% set status_text = "Fatura Aberta" %}
+                {% set status_class = "bg-sky-500/20 text-sky-300 border-sky-500/30" %}
+                {% if card.percent > 90 %}
+                    {% set bar_color = "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" %}
+                {% else %}
+                    {% set bar_color = "bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.5)]" %}
+                {% endif %}
+            {% endif %}
+
+            <div class="carousel-item-card absolute inset-0 w-full h-full p-5 flex flex-col justify-between transition-opacity duration-300 {{ bg_card }} {% if not loop.first %}opacity-0 pointer-events-none{% else %}opacity-100 z-10{% endif %}" data-index="{{ loop.index }}">
+                
+                <div class="absolute -right-6 -bottom-10 opacity-10 text-[10rem] text-white pointer-events-none">
+                    <i class="fab {{ brand_icon }}"></i>
+                </div>
+
+                <div class="z-10 w-full flex justify-between items-start pl-8 pr-8"> <div>
+                        <div class="flex items-center space-x-2 mb-2">
+                            <i class="fab {{ brand_icon }} text-2xl text-white/90"></i>
+                            <h4 class="text-white font-bold text-lg tracking-wide shadow-black drop-shadow-sm">{{ card.obj.name }}</h4>
+                        </div>
+                        
+                        <div class="flex flex-col space-y-1 ml-0.5">
+                            <p class="text-xs text-white/70">Vence: <span class="text-white font-medium">{{ card.full_due_date }}</span></p>
+                            <p class="text-xs text-white/50">Fecha: {{ card.obj.closing_day }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="px-2 py-1 rounded text-xs font-bold border uppercase tracking-wider backdrop-blur-md {{ status_class }}">
+                        {{ status_text }}
+                    </div>
+                </div>
+
+                <div class="z-10 w-full flex flex-col justify-center items-center py-2">
+                    <div class="w-3/4 flex justify-between text-xs text-white/60 mb-1 px-1 font-medium">
+                        <span>Disp: R$ {{ "%.0f"|format(card.available) }}</span>
+                        <span>{{ "%.0f"|format(card.percent) }}% Usado</span>
+                    </div>
+                    <div class="w-3/4 bg-black/40 rounded-full h-1 border border-white/5 overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-700 {{ bar_color }}" style="width: {{ card.percent }}%"></div>
+                    </div>
+                </div>
+
+                <div class="z-10 w-full flex items-end justify-start mt-auto space-x-4 pl-2">
+                    
+                    <div>
+                        <p class="text-white/70 text-xs uppercase font-bold mb-1 ml-0.5">Total da Fatura</p>
+                        <p class="text-3xl font-bold text-white tracking-tight drop-shadow-md leading-none">
+                            <span class="text-sm align-top opacity-60 mr-0.5">R$</span>{{ "%.2f"|format(card.invoice_amount)|replace('.', ',') }}
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col space-y-1 mb-0.5">
+                        {% if not card.is_paid %}
+                            <button onclick="openPayCardModal('{{ card.obj.id }}', '{{ card.obj.name }}', '{{ card.invoice_amount }}')" 
+                                    class="bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold py-1 px-3 rounded shadow-lg transition disabled:opacity-50 hover:scale-105 active:scale-95 text-center whitespace-nowrap"
+                                    {% if not is_current_view %}disabled{% endif %}>
+                                Pagar
+                            </button>
+                        {% endif %}
+                        
+                        <button onclick="openAdvanceModal('{{ card.obj.id }}', '{{ card.obj.name }}')" 
+                                class="bg-black/30 hover:bg-black/50 text-white text-xs font-bold py-1 px-3 rounded border border-white/10 transition disabled:opacity-50 hover:border-white/30 text-center whitespace-nowrap"
+                                {% if not is_current_view %}disabled{% endif %}>
+                            Antecipar
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+            {% else %}
+             <div class="h-full flex items-center justify-center bg-slate-800 text-slate-500 p-6 text-center">
+                <div>
+                    <i class="fas fa-credit-card text-4xl mb-3 opacity-30"></i>
+                    <p>Nenhum cartão cadastrado.</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
-    {% endfor %}
 </div>

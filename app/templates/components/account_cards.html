@@ -1,23 +1,89 @@
-<div class="space-y-2">
-    <h3 class="text-sm font-bold text-slate-400 uppercase ml-1 flex items-center">
-        <i class="fas fa-wallet mr-2"></i> Minhas Contas
-    </h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {% for acc in current_user.accounts %}
-        <div class="bg-slate-800 rounded-lg border border-slate-700 p-4 hover:border-slate-500 transition shadow-md">
-            <div class="flex justify-between items-start">
-                <div>
-                    <h4 class="text-white font-bold truncate">{{ acc.name }}</h4>
-                    <p class="text-xs text-slate-500 mt-1">Saldo Atual</p>
-                    <p class="text-lg font-bold {% if acc.current_balance < 0 %}text-red-400{% else %}text-emerald-400{% endif %} mt-1">
-                        R$ {{ acc.current_balance|currency }}
+<div class="h-full flex flex-col">
+    <div class="flex items-center justify-between mb-3 px-1">
+        <h3 class="text-sm font-bold text-slate-400 uppercase flex items-center">
+            <i class="fas fa-wallet mr-2"></i> Minhas Contas
+        </h3>
+        <div class="text-xs text-slate-500 font-mono bg-slate-800 px-2 py-1 rounded-full border border-slate-700">
+            <span id="acc-counter">1</span>/{{ current_user.accounts|length }}
+        </div>
+    </div>
+
+    <div class="relative w-full flex-1 rounded-xl shadow-2xl overflow-hidden group border border-slate-700/50">
+        
+        <button onclick="moveCarousel('acc', -1)" class="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-3 text-white/50 hover:text-white hover:bg-black/20 rounded-full transition backdrop-blur-sm">
+            <i class="fas fa-chevron-left text-xl"></i>
+        </button>
+
+        <button onclick="moveCarousel('acc', 1)" class="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-3 text-white/50 hover:text-white hover:bg-black/20 rounded-full transition backdrop-blur-sm">
+            <i class="fas fa-chevron-right text-xl"></i>
+        </button>
+
+        <div class="relative w-full h-full min-h-[180px]"> {% for acc in current_user.accounts|sort(attribute='current_balance', reverse=True) %}
+            
+            {# --- Lógica de Cores e Ícones Baseada no Nome --- #}
+            {% set acc_name = acc.name|lower %}
+            {% set bg_class = "bg-gradient-to-br from-slate-700 to-slate-900" %}
+            {% set icon_class = "fas fa-university" %}
+            
+            {% if 'nubank' in acc_name %}
+                {% set bg_class = "bg-gradient-to-br from-purple-900 to-purple-700" %}
+            {% elif 'itaú' in acc_name or 'itau' in acc_name %}
+                {% set bg_class = "bg-gradient-to-br from-orange-700 to-orange-900" %}
+            {% elif 'bradesco' in acc_name %}
+                {% set bg_class = "bg-gradient-to-br from-red-800 to-red-900" %}
+            {% elif 'inter' in acc_name %}
+                {% set bg_class = "bg-gradient-to-br from-orange-500 to-yellow-600" %}
+            {% elif 'santander' in acc_name %}
+                {% set bg_class = "bg-gradient-to-br from-red-700 to-red-800" %}
+            {% elif 'caixa' in acc_name %}
+                {% set bg_class = "bg-gradient-to-br from-blue-800 to-blue-900" %}
+            {% elif 'bb' in acc_name or 'brasil' in acc_name %}
+                {% set bg_class = "bg-gradient-to-br from-yellow-700 to-yellow-900" %}
+            {% elif 'c6' in acc_name %}
+                {% set bg_class = "bg-gradient-to-br from-slate-800 to-black" %}
+            {% elif 'dinheiro' in acc_name %}
+                {% set bg_class = "bg-gradient-to-br from-emerald-800 to-emerald-950" %}
+                {% set icon_class = "fas fa-money-bill-wave" %}
+            {% endif %}
+
+            <div class="carousel-item-acc absolute inset-0 w-full h-full p-6 flex flex-col justify-between transition-opacity duration-300 {{ bg_class }} {% if not loop.first %}opacity-0 pointer-events-none{% else %}opacity-100 z-10{% endif %}" data-index="{{ loop.index }}">
+                
+                <div class="absolute -right-6 -bottom-10 opacity-10 text-[10rem] text-white pointer-events-none select-none">
+                    <i class="{{ icon_class }}"></i>
+                </div>
+                
+                <div class="flex justify-between items-start z-10 relative">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-white/10 rounded-lg backdrop-blur-md">
+                            <i class="{{ icon_class }} text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-bold text-lg leading-tight">{{ acc.name }}</h4>
+                            <p class="text-white/60 text-xs uppercase tracking-wider">Conta Corrente</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="z-10 relative mt-4">
+                    <p class="text-white/70 text-xs uppercase font-bold mb-1">Saldo Disponível</p>
+                    <p class="text-4xl font-bold text-white tracking-tight drop-shadow-md">
+                        <span class="text-lg align-top opacity-60 mr-1">R$</span>{{ "%.2f"|format(acc.current_balance)|replace('.', ',') }}
                     </p>
                 </div>
-                <div class="bg-slate-700 p-2 rounded-full text-slate-300">
-                    <i class="fas fa-university"></i>
+                
+                {% if 'dinheiro' not in acc_name %}
+                <div class="absolute top-6 right-6 w-12 h-8 rounded bg-gradient-to-br from-yellow-200 to-yellow-500 opacity-80 shadow-sm z-0"></div>
+                {% endif %}
+
+            </div>
+            {% else %}
+            <div class="h-full flex items-center justify-center bg-slate-800 text-slate-500 p-6 text-center">
+                <div>
+                    <i class="fas fa-wallet text-4xl mb-3 opacity-30"></i>
+                    <p>Nenhuma conta cadastrada.</p>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 </div>

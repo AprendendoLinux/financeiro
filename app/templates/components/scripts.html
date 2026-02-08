@@ -1,5 +1,45 @@
 <script>
     // ==========================================
+    // 0. CARROSSEL DE CONTAS E CARTÕES (ATUALIZADO)
+    // ==========================================
+    
+    function moveCarousel(type, direction) {
+        const items = document.querySelectorAll(`.carousel-item-${type}`);
+        if (items.length === 0) return;
+
+        let activeIndex = -1;
+        
+        // Procura o item que está visível (opacity-100)
+        items.forEach((item, index) => {
+            if (item.classList.contains('opacity-100')) {
+                activeIndex = index;
+            }
+        });
+
+        // Fallback de segurança
+        if (activeIndex === -1) activeIndex = 0;
+
+        // Calcula novo índice (Circular)
+        let newIndex = activeIndex + direction;
+        if (newIndex < 0) newIndex = items.length - 1;
+        if (newIndex >= items.length) newIndex = 0;
+
+        // 1. Oculta o atual
+        const currentItem = items[activeIndex];
+        currentItem.classList.remove('opacity-100', 'z-10');
+        currentItem.classList.add('opacity-0', 'pointer-events-none');
+
+        // 2. Mostra o novo
+        const newItem = items[newIndex];
+        newItem.classList.remove('opacity-0', 'pointer-events-none');
+        newItem.classList.add('opacity-100', 'z-10');
+
+        // 3. Atualiza Contador
+        const counterEl = document.getElementById(`${type}-counter`);
+        if(counterEl) counterEl.innerText = newIndex + 1;
+    }
+
+    // ==========================================
     // 1. GERENCIAMENTO DE MODAIS E UI GERAL
     // ==========================================
 
@@ -13,28 +53,20 @@
         if(el) el.classList.add('hidden'); 
     }
     
-    // Wrapper para compatibilidade
     function closeEditModal(type) { closeModal('edit-' + type); }
 
-    // NOVA FUNÇÃO: Modal Genérico de Exclusão (Perigo/Vermelho)
     function openDeleteModal(url, message) {
         const btnConfirm = document.getElementById('btn-confirm-delete');
         const msgElement = document.getElementById('delete-modal-message');
-        
-        // Configura o link de destino
         btnConfirm.href = url;
-        
-        // Configura a mensagem
         if (message) {
             msgElement.innerText = message;
         } else {
             msgElement.innerText = "Tem certeza que deseja excluir?";
         }
-        
         openModal('generic-delete');
     }
 
-    // NOVA FUNÇÃO: Modal de Notificação (Sucesso/Info)
     function openNotificationModal(category, message) {
         const titleEl = document.getElementById('notif-title');
         const msgEl = document.getElementById('notif-message');
@@ -73,13 +105,10 @@
 
         titleEl.innerText = title;
         msgEl.innerText = message;
-        
         openModal('notification');
     }
 
-    // NOVA FUNÇÃO: Ordenação da Tabela
     let sortAscending = false; 
-
     function sortTransactions() {
         const tbody = document.getElementById("transactions-body");
         const rows = Array.from(tbody.querySelectorAll("tr"));
@@ -115,11 +144,9 @@
         rows.forEach(row => tbody.appendChild(row));
     }
 
-    // Função de Controle de Data (Futuro vs Hoje)
     function toggleDateLimit(cb, inputId) {
         const input = document.getElementById(inputId);
         if (!input) return;
-
         if (cb.checked) {
             input.removeAttribute('max');
         } else {
@@ -135,7 +162,6 @@
     function togglePassword(fieldId, iconId) {
         const input = document.getElementById(fieldId);
         const icon = iconId ? document.getElementById(iconId) : document.getElementById('icon-' + fieldId);
-        
         if (!input) return;
 
         if (input.type === "password") {
@@ -159,7 +185,6 @@
         if (!pwdInput) return;
 
         const pwd = pwdInput.value;
-        
         const reqs = {
             length: pwd.length >= 6,
             upper: /[A-Z]/.test(pwd),
@@ -195,16 +220,10 @@
         }
     }
 
-    // ==========================================
-    // 3. LÓGICA DE TRANSAÇÕES
-    // ==========================================
-
     function toggleCardField() {
         const expenseOptions = document.getElementById('expense-options');
         const radioType = document.querySelector('input[name="type"]:checked');
-        
         if (!expenseOptions || !radioType) return;
-
         if (radioType.value === 'receita') {
             expenseOptions.classList.add('hidden');
         } else {
@@ -212,20 +231,12 @@
         }
     }
 
-    // ==========================================
-    // 4. MODAL DE PAGAMENTO DE CARTÃO
-    // ==========================================
-
     function openPayCardModal(id, name, amount) {
         document.getElementById('pay-card-id').value = id;
         document.getElementById('pay-card-name').innerText = 'Cartão: ' + name;
         document.getElementById('pay-card-amount').value = amount;
         openModal('pay-card');
     }
-
-    // ==========================================
-    // 5. ANTECIPAÇÃO DE PARCELAS
-    // ==========================================
 
     let loadedGroups = [];
 
@@ -247,10 +258,8 @@
         try {
             const response = await fetch(`/api/card/${id}/installments`);
             if (!response.ok) throw new Error('Falha na requisição');
-            
             loadedGroups = await response.json();
             renderAdvanceGroups(); 
-
         } catch (err) {
             listDiv.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Erro ao carregar parcelas.</p>';
             console.error(err);
@@ -260,7 +269,6 @@
     function renderAdvanceGroups() {
         const listDiv = document.getElementById('advance-list');
         const submitBtn = document.querySelector('#modal-advance button[type="submit"]');
-        
         listDiv.innerHTML = '';
         submitBtn.disabled = true;
         submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -275,7 +283,6 @@
             const row = document.createElement('div');
             row.className = 'flex items-center justify-between p-3 mb-2 bg-slate-800 hover:bg-slate-700 rounded-lg cursor-pointer border border-slate-700 hover:border-sky-500 transition group';
             const totalFmt = group.total_remaining.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            
             row.innerHTML = `
                 <div>
                     <p class="text-sm text-white font-bold group-hover:text-sky-300 transition">${group.description}</p>
@@ -295,7 +302,6 @@
         const group = loadedGroups[groupIndex];
         const listDiv = document.getElementById('advance-list');
         const submitBtn = document.querySelector('#modal-advance button[type="submit"]');
-        
         listDiv.innerHTML = '';
         submitBtn.disabled = false;
         submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -370,10 +376,6 @@
         }
     }
 
-    // ==========================================
-    // 6. FUNÇÕES DE CONFIGURAÇÃO (Settings)
-    // ==========================================
-
     function openTab(tabName) {
         let contents = document.querySelectorAll('.tab-content');
         contents.forEach(div => div.classList.add('hidden'));
@@ -381,7 +383,6 @@
         let btns = document.querySelectorAll('.tab-btn');
         btns.forEach(btn => {
             btn.classList.remove('border-emerald-500', 'text-emerald-400', 'border-red-400', 'text-red-400', 'text-red-300');
-            
             if(btn.id === 'tab-account') {
                 btn.classList.add('border-transparent', 'text-red-400'); 
             } else {
@@ -418,7 +419,6 @@
 
     function toggleFixedMethod(mode) {
         let radioAccount, radioCredit, divAccount, divCredit, selectAccount, selectCard;
-
         if (mode === 'new') {
             radioAccount = document.getElementById('radio-new-account');
             divAccount = document.getElementById('new-method-account');
@@ -448,10 +448,6 @@
         }
     }
 
-    // ==========================================
-    // 7. FUNÇÕES DE EDIÇÃO
-    // ==========================================
-    
     function openEditCategory(id, name) {
         document.getElementById('form-edit-category').action = '/settings/category/edit/' + id;
         document.getElementById('edit-cat-name').value = name;
@@ -515,7 +511,6 @@
         openModal('edit-revenue');
     }
 
-    // Função para editar transação usando dataset
     function openEditTransaction(btn) {
         const d = btn.dataset;
         document.getElementById('form-edit-trans').action = '/transaction/edit/' + d.id;
@@ -523,10 +518,6 @@
         document.getElementById('edit-trans-amount').value = d.amount;
         openModal('edit-transaction');
     }
-
-    // ==========================================
-    // 8. FORMATAÇÃO E MÁSCARAS
-    // ==========================================
 
     function applyCurrencyMask() {
         const inputs = document.querySelectorAll('.currency-input');
@@ -550,10 +541,6 @@
         });
     }
 
-    // ==========================================
-    // 9. MODAL DE DANGER (RESET/DELETE)
-    // ==========================================
-    
     let currentDangerAction = null;
 
     function openDangerConfirm(action) {
@@ -603,10 +590,6 @@
         const formId = currentDangerAction === 'reset' ? 'form-reset' : 'form-delete';
         document.getElementById(formId).submit();
     }
-
-    // ==========================================
-    // 10. INICIALIZAÇÃO E EVENT LISTENERS GLOBAIS
-    // ==========================================
 
     document.addEventListener('DOMContentLoaded', () => {
         applyCurrencyMask();
@@ -670,10 +653,8 @@
             });
         }
 
-        // --- LÓGICA DE PARCELAS ---
         const checkFixedExpense = document.getElementById('check-fixed-expense');
         const installSelect = document.getElementById('new-expense-installments');
-
         if(checkFixedExpense && installSelect) {
             checkFixedExpense.addEventListener('change', function() {
                 if(this.checked) {
@@ -687,33 +668,25 @@
             });
         }
 
-        // --- MANTER POSIÇÃO DA ROLAGEM NOS INTERRUPTORES ---
-        
-        // 1. Restaurar posição
         const savedScroll = sessionStorage.getItem('pageScrollPos');
         if (savedScroll) {
             window.scrollTo(0, parseInt(savedScroll));
             sessionStorage.removeItem('pageScrollPos');
         }
 
-        // 2. Salvar posição ao clicar em links de toggle (Auto-Detecção)
         document.querySelectorAll('a[href*="toggle_fixed"]').forEach(el => {
             el.addEventListener('click', () => {
                 sessionStorage.setItem('pageScrollPos', window.scrollY);
             });
         });
 
-        // 3. Função global caso você use checkbox com onchange (Backup)
         window.saveScroll = function() {
             sessionStorage.setItem('pageScrollPos', window.scrollY);
         };
 
-        // --- EXIBIR NOTIFICAÇÕES (MODAL) ---
-        // Verifica se existem mensagens flash escondidas no DOM
         const flashContainer = document.getElementById('flash-overlay-container');
         if (flashContainer) {
             const messages = flashContainer.querySelectorAll('div');
-            // Mostra apenas a primeira mensagem para não empilhar modais (padrão de UX melhor)
             if (messages.length > 0) {
                 const firstMsg = messages[0];
                 const category = firstMsg.getAttribute('data-category');
