@@ -293,7 +293,7 @@
     </div>
 
     <div id="modal-edit-profile" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('edit-profile')"></div>
             <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
                 <form action="{{ url_for('settings.update_profile') }}" method="POST" class="p-6">
@@ -318,7 +318,7 @@
     </div>
 
     <div id="modal-change-password" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('change-password')"></div>
             <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
                 <form action="{{ url_for('settings.change_password') }}" method="POST" class="p-6">
@@ -365,7 +365,7 @@
     </div>
 
     <div id="modal-change-email" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('change-email')"></div>
             <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-700">
                 <form action="{{ url_for('settings.request_email_change') }}" method="POST" class="p-6">
@@ -387,7 +387,7 @@
     </div>
 
     <div id="modal-danger-confirm" class="hidden fixed inset-0 z-50 overflow-y-auto">
-         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('danger-confirm')"></div>
             <div id="danger-modal-border" class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-2 border-red-600">
                 <div class="bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
@@ -420,7 +420,7 @@
     </div>
 
     <div id="modal-reset-data" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('reset-data')"></div>
             <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-yellow-600/50">
                 <form id="form-reset" action="{{ url_for('settings.reset_data') }}" method="POST" class="p-6">
@@ -449,7 +449,7 @@
     </div>
 
     <div id="modal-delete-account" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeModal('delete-account')"></div>
             <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-red-600/50">
                 <form id="form-delete" action="{{ url_for('settings.delete_user_account') }}" method="POST" class="p-6">
@@ -479,7 +479,7 @@
     </div>
 
     <div id="modal-edit-category" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeEditModal('category')"></div>
             <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
                 <form id="form-edit-category" method="POST" class="p-6">
@@ -495,7 +495,7 @@
     </div>
     
     <div id="modal-edit-account" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeEditModal('account')"></div>
             <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
                 <form id="form-edit-account" method="POST" class="p-6">
@@ -511,7 +511,7 @@
     </div>
 
     <div id="modal-edit-card" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeEditModal('card')"></div>
             <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
                 <form id="form-edit-card" method="POST" class="p-6 space-y-4">

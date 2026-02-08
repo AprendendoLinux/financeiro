@@ -15,10 +15,10 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
-        <div class="lg:col-span-1 space-y-6">
+        <div class="lg:col-span-1 space-y-6 order-1 lg:order-1">
             <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden shadow-lg">
                 <div class="px-4 py-3 bg-slate-900 border-b border-slate-700 flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-emerald-400 uppercase"><i class="fas fa-calendar-check mr-2"></i> Receitas</h3>
+                    <h3 class="text-sm font-bold text-emerald-400 uppercase"><i class="fas fa-calendar-check mr-2"></i> Receitas Fixas</h3>
                 </div>
                 <div class="p-4 space-y-3">
                     {% for item in fixed_revenues %}
@@ -57,14 +57,14 @@
             </div>
         </div>
 
-        <div class="lg:col-span-2">
+        <div class="lg:col-span-2 order-3 lg:order-2">
             {% include "components/transactions_table.html" %}
         </div>
 
-        <div class="lg:col-span-1 space-y-6">
+        <div class="lg:col-span-1 space-y-6 order-2 lg:order-3">
             <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden shadow-lg">
                 <div class="px-4 py-3 bg-slate-900 border-b border-slate-700 flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-red-400 uppercase"><i class="fas fa-calendar-times mr-2"></i> Despesas</h3>
+                    <h3 class="text-sm font-bold text-red-400 uppercase"><i class="fas fa-calendar-times mr-2"></i> Despesas Fixas</h3>
                 </div>
                 <div class="p-4 space-y-3">
                     {% for item in fixed_expenses %}
