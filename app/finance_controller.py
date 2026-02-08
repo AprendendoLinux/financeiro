@@ -148,7 +148,6 @@ def dashboard():
             for i in range(len(items) - 1): items[i].is_locked_by_cascade = True
             items[-1].is_locked_by_cascade = False
 
-    # Identificar categoria de Pagamento para excluir da soma
     pagamento_cats = Category.query.filter_by(user_id=current_user.id, type='pagamento').all()
     pagamento_ids = [c.id for c in pagamento_cats]
 
@@ -160,8 +159,6 @@ def dashboard():
         if t.type == 'receita':
              receitas_real += t.amount
         elif t.type == 'despesa':
-            # Filtro Crucial: Ignora Pagamento de Fatura na soma das despesas
-            # (Pois as compras do cartão já serão somadas abaixo ou aqui mesmo)
             is_payment_cat = t.category_id in pagamento_ids
             is_payment_desc = "Pagamento Fatura" in (t.description or "") or "Pagamento de Cartão" in (t.description or "")
             
@@ -190,29 +187,22 @@ def dashboard():
     total_despesas_prev = sum(f.amount for f in fixed_account_expenses)
     
     for t in transactions:
-        # Soma avulsos de conta (exclui pagamentos de fatura para não duplicar)
         if t.type == 'despesa' and not t.fixed_expense_id and not t.card_id:
-            
             is_payment_cat = t.category_id in pagamento_ids
             is_payment_desc = "Pagamento Fatura" in (t.description or "") or "Pagamento de Cartão" in (t.description or "")
             
             if not is_payment_cat and not is_payment_desc:
                 total_despesas_prev += t.amount
 
-    # 3. Soma TOTAL das Faturas de Cartão (Isso representa o gasto real do cartão)
+    # 3. Soma TOTAL das Faturas de Cartão (Agora inclui o ROLLOVER/Dívida Passada)
+    cards_data = []
     for card in current_user.cards:
-        open_date, close_date, _ = TransactionService.get_invoice_dates(card, month, year)
+        # Pega as estatísticas JÁ com o cálculo de dívida acumulada via Service
+        stats = TransactionService.get_card_stats(current_user.id, card.id, month, year)
+        cards_data.append(stats)
         
-        # Soma TODAS as compras do cartão que caem nesta fatura (Fixas ou Avulsas)
-        total_fatura = db.session.query(func.sum(Transaction.amount)).filter(
-            Transaction.user_id == current_user.id,
-            Transaction.card_id == card.id,
-            Transaction.type == 'despesa',
-            Transaction.date >= open_date,
-            Transaction.date <= close_date
-        ).scalar() or 0
-        
-        total_despesas_prev += total_fatura
+        # O campo 'invoice_amount' já contém (Dívida Anterior + Gastos do Mês - Pagamentos do Mês)
+        total_despesas_prev += Decimal(stats['invoice_amount'])
 
     saldo_previsao = total_receitas_prev - total_despesas_prev
     
@@ -220,11 +210,6 @@ def dashboard():
 
     expenses_status = [{'obj': e, 'is_paid': e.id in paid_expense_ids} for e in fixed_account_expenses]
     revenues_status = [{'obj': r, 'is_received': r.id in received_revenue_ids} for r in fixed_revenues_defs]
-
-    cards_data = []
-    for card in current_user.cards:
-        stats = TransactionService.get_card_stats(current_user.id, card.id, month, year)
-        cards_data.append(stats)
 
     is_future_view = req_date.replace(day=1) > today.replace(day=1)
 

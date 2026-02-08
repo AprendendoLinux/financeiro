@@ -37,7 +37,30 @@ class TransactionService:
 
         open_date, close_date, due_date = TransactionService.get_invoice_dates(card, month, year)
         
-        # 1. Total da Fatura
+        # --- 1. CÁLCULO DA DÍVIDA ANTERIOR (ROLLOVER) ---
+        # Soma tudo que foi gasto ANTES da abertura desta fatura
+        past_expenses = db.session.query(func.sum(Transaction.amount)).filter(
+            Transaction.card_id == card_id,
+            Transaction.type == 'despesa',
+            Transaction.date < open_date,
+            or_(
+                Transaction.fixed_expense_id == None,
+                Transaction.date <= today
+            )
+        ).scalar() or 0
+
+        # Soma tudo que foi pago ANTES da abertura desta fatura
+        past_payments = db.session.query(func.sum(Transaction.amount)).filter(
+            Transaction.card_id == card_id,
+            Transaction.type == 'pagamento_cartao',
+            Transaction.date < open_date
+        ).scalar() or 0
+
+        # O que sobrou é a dívida trazida para o mês atual
+        past_balance = float(past_expenses) - float(past_payments)
+
+        # --- 2. CÁLCULO DO CICLO ATUAL ---
+        # Total gasto NESTE mês (no período da fatura)
         invoice_expenses = db.session.query(func.sum(Transaction.amount)).filter(
             Transaction.card_id == card_id,
             Transaction.type == 'despesa',
@@ -49,7 +72,7 @@ class TransactionService:
             )
         ).scalar() or 0
         
-        # 2. Pagamentos efetuados
+        # Pagamentos feitos para ESTA fatura (Consideramos pagamentos até 20 dias após vencimento para abater visualmente)
         invoice_payments = db.session.query(func.sum(Transaction.amount)).filter(
             Transaction.card_id == card_id,
             Transaction.type == 'pagamento_cartao',
@@ -57,9 +80,10 @@ class TransactionService:
             Transaction.date <= (due_date + timedelta(days=20)) 
         ).scalar() or 0
         
-        current_invoice = float(invoice_expenses) - float(invoice_payments)
+        # Fatura Final = (Dívida Passada) + (Gastos do Mês) - (Pagamentos Feitos)
+        current_invoice = past_balance + float(invoice_expenses) - float(invoice_payments)
 
-        # 3. Limite Global
+        # --- 3. Limite Global ---
         total_spent = db.session.query(func.sum(Transaction.amount))\
             .filter(
                 Transaction.card_id == card_id, 
@@ -85,6 +109,7 @@ class TransactionService:
         if card.limit_amount > 0:
             percent = (float(used_limit) / float(card.limit_amount)) * 100
 
+        # Consideramos paga se o valor restante for irrisório (ex: centavos de arredondamento)
         is_paid = current_invoice <= 0.01
 
         return {
@@ -93,7 +118,7 @@ class TransactionService:
             'used': used_limit,
             'available': available,
             'percent': min(percent, 100),
-            'invoice_amount': max(current_invoice, 0),
+            'invoice_amount': max(current_invoice, 0), # Mostra o valor acumulado a pagar
             'is_paid': is_paid,
             'full_due_date': due_date.strftime('%d/%m/%Y'),
             'full_closing_date': close_date.strftime('%d/%m/%Y'),
@@ -121,14 +146,13 @@ class TransactionService:
         account.current_balance -= amount
         
         # --- Lógica da Categoria Pagamento ---
-        # Busca ou cria a categoria de sistema "Pagamento" (Vermelha)
         pay_cat = Category.query.filter_by(user_id=user_id, type='pagamento').first()
         if not pay_cat:
             pay_cat = Category(
                 user_id=user_id, 
                 name='Pagamento', 
-                type='pagamento', # Tipo especial
-                color_hex='#EF4444'   # Vermelho
+                type='pagamento',
+                color_hex='#EF4444'
             )
             db.session.add(pay_cat)
             db.session.flush()
@@ -190,7 +214,6 @@ class TransactionService:
         if source.current_balance < amount:
             return False, f"Saldo insuficiente em {source.name}."
             
-        # --- Lógica da Categoria de Transferência ---
         trans_cat = Category.query.filter_by(user_id=user_id, type='transferencia').first()
         if not trans_cat:
             trans_cat = Category(
@@ -237,7 +260,7 @@ class TransactionService:
 
         payment = db.session.query(Transaction).filter(
             Transaction.user_id == user_id,
-            Transaction.card_id == card_id,
+            Transaction.card_id == card.id,
             Transaction.type == 'pagamento_cartao',
             Transaction.date >= open_date,
             Transaction.date <= (due_date + timedelta(days=10))
