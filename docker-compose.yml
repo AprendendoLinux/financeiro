@@ -44,7 +44,6 @@ services:
       - SMTP_PASSWORD=xxxxxxxxxxxxxx
       - SMTP_FROM=Sistema de Enquetes <seuemail@gmail.com>
     volumes:
-      - /srv/financeiro/migrations:/app/migrations
       - /srv/financeiro/uploads:/app/static/uploads
     depends_on:
       - db-financeiro

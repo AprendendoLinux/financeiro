@@ -9,7 +9,7 @@ import calendar
 import re 
 
 from app import db
-from app.models import Transaction, BankAccount, FixedExpense, FixedRevenue, CreditCard
+from app.models import Transaction, BankAccount, FixedExpense, FixedRevenue, CreditCard, Category
 from app.transaction_service import TransactionService
 
 finance_bp = Blueprint('finance', __name__)
@@ -46,26 +46,17 @@ def generate_fixed_installments(fixed_expense, start_date, months=12):
 
 # --- NOVA FUNÇÃO: RENOVAÇÃO AUTOMÁTICA ---
 def check_and_renew_fixed_expenses(user_id):
-    """
-    Verifica se as despesas fixas de cartão estão acabando 
-    e gera mais parcelas automaticamente.
-    """
-    # Busca todas as despesas fixas de cartão ativas
     fixed_cards = FixedExpense.query.filter_by(user_id=user_id).filter(FixedExpense.card_id != None).all()
     
     renewed_count = 0
     today = date.today()
-    # Define um horizonte de segurança (ex: se acabar em menos de 3 meses, renova)
     safety_horizon = today + relativedelta(months=3)
 
     for fixed in fixed_cards:
-        # Pega a última transação gerada para este fixo
         last_trans = Transaction.query.filter_by(fixed_expense_id=fixed.id).order_by(Transaction.date.desc()).first()
         
         if last_trans:
-            # Se a última transação for antes do horizonte de segurança, gera mais 12 meses
             if last_trans.date < safety_horizon:
-                # Começa no mês seguinte ao último lançamento
                 start_next = last_trans.date + relativedelta(months=1)
                 count = generate_fixed_installments(fixed, start_next, 12)
                 if count > 0:
@@ -77,7 +68,6 @@ def check_and_renew_fixed_expenses(user_id):
 @finance_bp.route('/dashboard')
 @login_required
 def dashboard():
-    # 1. Roda a verificação de renovação automática
     check_and_renew_fixed_expenses(current_user.id)
 
     today = date.today()
@@ -104,6 +94,7 @@ def dashboard():
 
     all_fixed_expenses = FixedExpense.query.filter_by(user_id=current_user.id).order_by(FixedExpense.day_of_month).all()
     fixed_account_expenses = [f for f in all_fixed_expenses if not f.card_id]
+    fixed_revenues_defs = FixedRevenue.query.filter_by(user_id=current_user.id).order_by(FixedRevenue.day_of_month).all()
 
     ref_pattern = f"%Ref: {month:02d}/{year}%"
     
@@ -121,39 +112,27 @@ def dashboard():
 
     paid_expense_ids = []
     received_revenue_ids = []
-
+    
+    fixed_map = {}
     for t in transactions:
         is_anticipated = "(Ref:" in (t.description or "") or "(Repassado" in (t.description or "") or "(Antecipado)" in (t.description or "")
-        
-        if t.date > today and not is_anticipated:
+        if t.date > today and not is_anticipated and not t.account_id:
             t.is_scheduled = True
         else:
             t.is_scheduled = False
-        
-        if t.account_id:
-            t.is_scheduled = False
-            
-        if t.fixed_expense_id:
-            paid_expense_ids.append(t.fixed_expense_id)
-        if t.fixed_revenue_id:
-            received_revenue_ids.append(t.fixed_revenue_id)
+
+        if t.fixed_expense_id: paid_expense_ids.append(t.fixed_expense_id)
+        if t.fixed_revenue_id: received_revenue_ids.append(t.fixed_revenue_id)
 
         if (t.fixed_expense_id or t.fixed_revenue_id) and t.is_scheduled:
             fid_col = Transaction.fixed_expense_id if t.fixed_expense_id else Transaction.fixed_revenue_id
             fid_val = t.fixed_expense_id or t.fixed_revenue_id
-            
-            pending_previous = Transaction.query.filter(
-                Transaction.user_id == current_user.id,
-                fid_col == fid_val,
-                Transaction.date < t.date, 
-                Transaction.date > today 
+            pending = Transaction.query.filter(
+                Transaction.user_id == current_user.id, fid_col == fid_val,
+                Transaction.date < t.date, Transaction.date > today 
             ).first()
-            
-            if pending_previous: t.is_locked_anticipate = True 
-            else: t.is_locked_anticipate = False 
+            t.is_locked_anticipate = bool(pending)
 
-    fixed_map = {}
-    for t in transactions:
         fid = t.fixed_expense_id or t.fixed_revenue_id
         if fid:
             if fid not in fixed_map: fixed_map[fid] = []
@@ -169,13 +148,75 @@ def dashboard():
             for i in range(len(items) - 1): items[i].is_locked_by_cascade = True
             items[-1].is_locked_by_cascade = False
 
-    receitas = sum(t.amount for t in transactions if t.type == 'receita' and t.date <= today)
-    despesas = sum(t.amount for t in transactions if t.type == 'despesa' and t.date <= today)
-    
-    saldo_mensal = receitas - despesas
-    saldo_contas = sum(acc.current_balance for acc in current_user.accounts)
+    # Identificar categoria de Pagamento para excluir da soma
+    pagamento_cats = Category.query.filter_by(user_id=current_user.id, type='pagamento').all()
+    pagamento_ids = [c.id for c in pagamento_cats]
 
-    fixed_revenues_defs = FixedRevenue.query.filter_by(user_id=current_user.id).order_by(FixedRevenue.day_of_month).all()
+    # --- CÁLCULO DO BALANÇO REAL (O que de fato impactou o saldo HOJE) ---
+    receitas_real = 0
+    despesas_real = 0
+    
+    for t in transactions:
+        if t.type == 'receita':
+             receitas_real += t.amount
+        elif t.type == 'despesa':
+            # Filtro Crucial: Ignora Pagamento de Fatura na soma das despesas
+            # (Pois as compras do cartão já serão somadas abaixo ou aqui mesmo)
+            is_payment_cat = t.category_id in pagamento_ids
+            is_payment_desc = "Pagamento Fatura" in (t.description or "") or "Pagamento de Cartão" in (t.description or "")
+            
+            if is_payment_cat or is_payment_desc:
+                continue
+
+            if t.card_id:
+                if t.date <= today: despesas_real += t.amount
+            else:
+                despesas_real += t.amount
+    
+    receitas = receitas_real
+    despesas = despesas_real
+    saldo_mensal = receitas - despesas
+
+    # --- CÁLCULO DA PREVISÃO (Saldo Final após tudo pago) ---
+    
+    # 1. Receitas: Fixas + Avulsas
+    total_receitas_prev = sum(r.amount for r in fixed_revenues_defs)
+    
+    for t in transactions:
+        if t.type == 'receita' and not t.fixed_revenue_id:
+            total_receitas_prev += t.amount
+
+    # 2. Despesas: Fixas de Conta + Avulsos de Conta (SEM PAGAMENTO DE FATURA) + Faturas Totais
+    total_despesas_prev = sum(f.amount for f in fixed_account_expenses)
+    
+    for t in transactions:
+        # Soma avulsos de conta (exclui pagamentos de fatura para não duplicar)
+        if t.type == 'despesa' and not t.fixed_expense_id and not t.card_id:
+            
+            is_payment_cat = t.category_id in pagamento_ids
+            is_payment_desc = "Pagamento Fatura" in (t.description or "") or "Pagamento de Cartão" in (t.description or "")
+            
+            if not is_payment_cat and not is_payment_desc:
+                total_despesas_prev += t.amount
+
+    # 3. Soma TOTAL das Faturas de Cartão (Isso representa o gasto real do cartão)
+    for card in current_user.cards:
+        open_date, close_date, _ = TransactionService.get_invoice_dates(card, month, year)
+        
+        # Soma TODAS as compras do cartão que caem nesta fatura (Fixas ou Avulsas)
+        total_fatura = db.session.query(func.sum(Transaction.amount)).filter(
+            Transaction.user_id == current_user.id,
+            Transaction.card_id == card.id,
+            Transaction.type == 'despesa',
+            Transaction.date >= open_date,
+            Transaction.date <= close_date
+        ).scalar() or 0
+        
+        total_despesas_prev += total_fatura
+
+    saldo_previsao = total_receitas_prev - total_despesas_prev
+    
+    saldo_contas = sum(acc.current_balance for acc in current_user.accounts)
 
     expenses_status = [{'obj': e, 'is_paid': e.id in paid_expense_ids} for e in fixed_account_expenses]
     revenues_status = [{'obj': r, 'is_received': r.id in received_revenue_ids} for r in fixed_revenues_defs]
@@ -192,6 +233,7 @@ def dashboard():
                          receitas=receitas,
                          despesas=despesas,
                          saldo_mensal=saldo_mensal,
+                         saldo_previsao=saldo_previsao,
                          saldo_contas=saldo_contas,
                          current_month=month,
                          current_year=year,
