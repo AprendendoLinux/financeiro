@@ -15,7 +15,7 @@ email-validator==2.1.0
 # Variáveis de Ambiente
 python-dotenv==1.0.0
 
-# Servidor de Aplicação
+# Servidor de Aplicaçao
 gunicorn==21.2.0
 
 # Utilitários
