@@ -21,6 +21,8 @@ gunicorn==21.2.0
 # Utilitários
 pydantic==2.5.3
 python-dateutil==2.8.2
+
+# 2Factor
 pyotp
 qrcode
 pillow
