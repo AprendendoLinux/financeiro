@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8 pb-10">
+
+    <div>
+        <a href="{{ url_for('finance.dashboard') }}" class="inline-flex items-center px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition duration-200 shadow-sm">
+            <i class="fas fa-arrow-left mr-2"></i> Voltar ao Dashboard
+        </a>
+    </div>
+
+    <div class="text-center space-y-2">
+        <h1 class="text-3xl font-bold text-white">
+            <i class="fas fa-life-ring text-blue-500 mr-2"></i> Central de Ajuda
+        </h1>
+        <p class="text-slate-400">Como podemos ajudar você a controlar suas finanças hoje?</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div onclick="openTopic('help-settings')" class="bg-slate-800 p-6 rounded-lg border border-slate-700 shadow-lg hover:border-blue-500/50 transition duration-300 cursor-pointer transform hover:scale-[1.02] group">
+            <div class="w-12 h-12 bg-blue-900/50 rounded-lg flex items-center justify-center mb-4 text-blue-400 text-xl group-hover:text-white group-hover:bg-blue-600 transition">
+                <i class="fas fa-rocket"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Primeiros Passos</h3>
+            <p class="text-sm text-slate-400">Aprenda a configurar contas, cartões e categorias para iniciar com o pé direito.</p>
+        </div>
+        
+        <div onclick="openTopic('help-transactions')" class="bg-slate-800 p-6 rounded-lg border border-slate-700 shadow-lg hover:border-emerald-500/50 transition duration-300 cursor-pointer transform hover:scale-[1.02] group">
+            <div class="w-12 h-12 bg-emerald-900/50 rounded-lg flex items-center justify-center mb-4 text-emerald-400 text-xl group-hover:text-white group-hover:bg-emerald-600 transition">
+                <i class="fas fa-plus-circle"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Lançamentos</h3>
+            <p class="text-sm text-slate-400">Como registrar receitas, despesas, parcelamentos e transferências.</p>
+        </div>
+
+        <div onclick="openTopic('help-security')" class="bg-slate-800 p-6 rounded-lg border border-slate-700 shadow-lg hover:border-red-500/50 transition duration-300 cursor-pointer transform hover:scale-[1.02] group">
+            <div class="w-12 h-12 bg-red-900/50 rounded-lg flex items-center justify-center mb-4 text-red-400 text-xl group-hover:text-white group-hover:bg-red-600 transition">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Segurança</h3>
+            <p class="text-sm text-slate-400">Proteja sua conta com 2FA e gerencie seus dados pessoais.</p>
+        </div>
+    </div>
+
+    <div class="space-y-4">
+        
+        <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <details id="help-dashboard" class="group">
+                <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-5 hover:bg-slate-750 transition">
+                    <span class="text-white flex items-center">
+                        <i class="fas fa-chart-line w-6 text-center text-indigo-400 mr-3"></i> Entendendo o Dashboard
+                    </span>
+                    <span class="transition group-open:rotate-180">
+                        <i class="fas fa-chevron-down text-slate-500"></i>
+                    </span>
+                </summary>
+                <div class="text-slate-400 border-t border-slate-700 p-5 text-sm space-y-3 leading-relaxed bg-slate-900/30">
+                    <p><strong class="text-white">Cards de Resumo:</strong> No topo, você vê o Saldo Atual (soma de todas as contas), Receitas e Despesas do mês, e a previsão da fatura do cartão.</p>
+                    <p><strong class="text-white">Carrossel:</strong> Deslize para ver o saldo individual de cada banco ou o limite de cada cartão de crédito.</p>
+                    <p><strong class="text-white">Fixos:</strong> Nas laterais, aparecem suas contas recorrentes. Use a caixinha de seleção (checkbox) para marcar rapidamente que uma conta fixa foi paga ou recebida.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <details id="help-transactions" class="group">
+                <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-5 hover:bg-slate-750 transition">
+                    <span class="text-white flex items-center">
+                        <i class="fas fa-exchange-alt w-6 text-center text-emerald-400 mr-3"></i> Criando Transações
+                    </span>
+                    <span class="transition group-open:rotate-180">
+                        <i class="fas fa-chevron-down text-slate-500"></i>
+                    </span>
+                </summary>
+                <div class="text-slate-400 border-t border-slate-700 p-5 text-sm space-y-3 leading-relaxed bg-slate-900/30">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong>Receita/Despesa:</strong> Escolha o tipo, valor e data. Se marcar como "Pago/Recebido", o saldo atualiza na hora.</li>
+                        <li><strong>Cartão de Crédito:</strong> Ao selecionar "Cartão", o valor não sai da sua conta bancária. Ele vai para a fatura do cartão.</li>
+                        <li><strong>Parcelamento:</strong> Compras no cartão podem ser parceladas. O sistema divide o valor e lança automaticamente nos meses seguintes.</li>
+                        <li><strong>Transferência:</strong> Move dinheiro de uma conta para outra (ex: Bradesco -> Nubank) sem alterar seu patrimônio total.</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
+
+        <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <details id="help-cards" class="group">
+                <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-5 hover:bg-slate-750 transition">
+                    <span class="text-white flex items-center">
+                        <i class="fas fa-credit-card w-6 text-center text-yellow-400 mr-3"></i> Cartões e Faturas
+                    </span>
+                    <span class="transition group-open:rotate-180">
+                        <i class="fas fa-chevron-down text-slate-500"></i>
+                    </span>
+                </summary>
+                <div class="text-slate-400 border-t border-slate-700 p-5 text-sm space-y-3 leading-relaxed bg-slate-900/30">
+                    <p>O sistema gerencia seus cartões baseado em duas datas importantes:</p>
+                    <ul class="list-disc list-inside space-y-1 ml-2">
+                        <li><strong>Dia do Fechamento:</strong> Compras feitas após esse dia caem na fatura do mês seguinte.</li>
+                        <li><strong>Dia do Vencimento:</strong> A data limite para pagamento.</li>
+                    </ul>
+                    <p class="mt-2 text-yellow-500"><i class="fas fa-lightbulb mr-1"></i> Dica: Mantenha o limite do cartão atualizado nas configurações para ver quanto crédito você ainda tem disponível.</p>
+                </div>
+            </details>
+        </div>
+
+        <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <details id="help-settings" class="group">
+                <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-5 hover:bg-slate-750 transition">
+                    <span class="text-white flex items-center">
+                        <i class="fas fa-cog w-6 text-center text-slate-400 mr-3"></i> Configurações e Customização
+                    </span>
+                    <span class="transition group-open:rotate-180">
+                        <i class="fas fa-chevron-down text-slate-500"></i>
+                    </span>
+                </summary>
+                <div class="text-slate-400 border-t border-slate-700 p-5 text-sm space-y-3 leading-relaxed bg-slate-900/30">
+                    <p>No menu de Configurações (ícone de engrenagem), você pode:</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>Criar <strong>Categorias</strong> personalizadas com cores automáticas.</li>
+                        <li>Cadastrar ou remover <strong>Contas Bancárias</strong> e definir saldos iniciais.</li>
+                        <li>Gerenciar seus <strong>Cartões de Crédito</strong>.</li>
+                        <li>Definir <strong>Despesas e Receitas Fixas</strong> (recorrentes).</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
+
+        <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <details id="help-security" class="group">
+                <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-5 hover:bg-slate-750 transition">
+                    <span class="text-white flex items-center">
+                        <i class="fas fa-lock w-6 text-center text-blue-500 mr-3"></i> Segurança da Conta
+                    </span>
+                    <span class="transition group-open:rotate-180">
+                        <i class="fas fa-chevron-down text-slate-500"></i>
+                    </span>
+                </summary>
+                <div class="text-slate-400 border-t border-slate-700 p-5 text-sm space-y-3 leading-relaxed bg-slate-900/30">
+                    <p>Acesse <strong>Configurações > Minha Conta</strong> para:</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>Ativar a <strong>Autenticação de Dois Fatores (2FA)</strong>. Recomendamos usar um app como Google Authenticator.</li>
+                        <li>Alterar sua senha ou endereço de e-mail.</li>
+                        <li>Zerar seus dados (caso queira recomeçar do zero) ou excluir sua conta permanentemente.</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
+
+    </div>
+
+    <div class="mt-10 p-6 bg-slate-900/50 rounded-lg border border-slate-800 text-center">
+        <p class="text-slate-400 mb-4">Ainda tem dúvidas ou encontrou um problema?</p>
+        <a href="mailto:suporte@financeiro.com" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-slate-700 hover:bg-slate-600 focus:outline-none transition">
+            <i class="fas fa-envelope mr-2"></i> Contatar Suporte
+        </a>
+    </div>
+
+</div>
+
+<script>
+    function openTopic(elementId) {
+        // Encontra o elemento de detalhes
+        const details = document.getElementById(elementId);
+        if (details) {
+            // Abre o acordeão
+            details.open = true;
+            
+            // Rola suavemente até ele
+            details.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Efeito visual de destaque (brilho rápido)
+            details.classList.add('ring-2', 'ring-blue-500', 'transition-all', 'duration-500');
+            setTimeout(() => {
+                details.classList.remove('ring-2', 'ring-blue-500');
+            }, 1000);
+        }
+    }
+</script>
+
+{% endblock %}

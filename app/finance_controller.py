@@ -654,3 +654,26 @@ def toggle_fixed(type_fixed, id):
             
     db.session.commit()
     return redirect(url_for('finance.dashboard', month=target_month, year=target_year))
+
+@finance_bp.route('/help')
+@login_required
+def help_page():
+    # Obtém a data atual para preencher o cabeçalho (header_nav)
+    today = date.today()
+    current_month = today.month
+    current_year = today.year
+    
+    # Define o nome do mês (necessário para o título do header)
+    MONTHS_PT = {
+        1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+        5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+        9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+    }
+    month_name = MONTHS_PT.get(current_month, 'Mês')
+
+    # Renderiza a página passando todas as variáveis que o header_nav exige
+    return render_template('help.html', 
+                         current_month=current_month,
+                         current_year=current_year,
+                         month_name=month_name,
+                         allow_next=False) # Define se a seta "Próximo" aparece

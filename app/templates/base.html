@@ -78,6 +78,9 @@
                                 <a href="{{ url_for('settings.index') }}" class="text-slate-400 hover:text-white transition transform hover:scale-110" title="Configurações">
                                     <i class="fas fa-cog text-lg"></i>
                                 </a>
+                                <a href="{{ url_for('finance.help_page') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out" title="Central de Ajuda">
+                                    <i class="fas fa-question-circle text-lg"></i>
+                                </a>
                                 <a href="{{ url_for('auth.logout') }}" class="text-red-400 hover:text-red-300 transition transform hover:scale-110" title="Sair">
                                     <i class="fas fa-sign-out-alt text-lg"></i>
                                 </a>
@@ -115,6 +118,9 @@
                     </div>
                     <a href="{{ url_for('settings.index') }}" class="text-slate-300 hover:bg-slate-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
                         <i class="fas fa-cog mr-2 w-5"></i> Configurações
+                    </a>
+                    <a href="{{ url_for('finance.help_page') }}" class="text-slate-300 hover:bg-slate-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                        <i class="fas fa-question-circle mr-2 w-5"></i> Central de Ajuda
                     </a>
                     <a href="{{ url_for('auth.logout') }}" class="text-red-400 hover:bg-red-900/30 block px-3 py-2 rounded-md text-base font-medium">
                         <i class="fas fa-sign-out-alt mr-2 w-5"></i> Sair
