@@ -27,4 +27,4 @@ pyotp
 qrcode
 pillow
 
-# Fim do arquivo
+# Fim do arquivo - 2
