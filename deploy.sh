@@ -1,66 +1,82 @@
 #!/bin/bash
 
-# Cores para facilitar a leitura
+# Cores para feedback visual
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-NC='\033[0m' # Sem cor
+NC='\033[0m' # No Color
 
-echo -e "${YELLOW}--- Iniciando Processo de Deploy (Dev -> Main) ---${NC}"
+echo -e "${YELLOW}>>> INICIANDO AUTO-DEPLOY (Dev -> Main -> GHCR)${NC}"
 
-# 1. Verifica se há arquivos não commitados
+# 1. Verifica se há arquivos não salvos (Segurança)
 if [[ $(git status --porcelain) ]]; then
-    echo -e "${RED}ERRO: Você tem alterações não salvas (uncommitted changes).${NC}"
-    echo "Por favor, faça commit ou stash das suas alterações na dev antes de rodar o script."
+    echo -e "${RED}ERRO: Você tem alterações não salvas.${NC}"
+    echo "Faça commit ou stash na branch dev antes de rodar o deploy."
     exit 1
 fi
 
-# 2. Garante que está na branch dev para pegar as últimas novidades
-echo -e "${GREEN}1. Garantindo que estamos na branch dev...${NC}"
+# 2. Garante que a branch Dev está sincronizada
+echo -e "${GREEN}1. Sincronizando branch Dev...${NC}"
 git checkout dev
 git pull origin dev
 
-# 3. Muda para main e atualiza
-echo -e "${GREEN}2. Atualizando a branch main...${NC}"
+# 3. Vai para Main, atualiza e faz o Merge
+echo -e "${GREEN}2. Atualizando Main e fazendo Merge da Dev...${NC}"
 git checkout main
 git pull origin main
 
-# 4. Faz o Merge da dev na main
-echo -e "${GREEN}3. Fazendo merge da dev na main...${NC}"
-if git merge dev; then
-    echo -e "Merge realizado com sucesso."
-else
-    echo -e "${RED}ERRO: Conflito no merge. Resolva manualmente e tente novamente.${NC}"
+if ! git merge dev; then
+    echo -e "${RED}ERRO: Conflito no merge. Resolva manualmente.${NC}"
     exit 1
 fi
 
-# 5. Pergunta a versão
-echo -e "${YELLOW}---------------------------------------------------${NC}"
-echo -e "${YELLOW}Qual será o número da nova versão? (ex: 1.0.5)${NC}"
-read -p "Versão: " version_input
+# 4. CÁLCULO AUTOMÁTICO DA VERSÃO
+echo -e "${GREEN}3. Calculando próxima versão...${NC}"
 
-# Garante que começa com 'v'
-if [[ $version_input != v* ]]; then
-    version="v$version_input"
+# Busca todas as tags do repositório remoto para não errar a conta
+git fetch --tags
+
+# Pega a última tag que segue o padrão v*.*.* (ex: v1.0.5)
+LAST_TAG=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n 1)
+
+if [ -z "$LAST_TAG" ]; then
+    # Se não existir nenhuma tag, começa na v1.0.0
+    NEW_TAG="v1.0.0"
+    echo -e "Nenhuma tag encontrada. Iniciando versão: ${YELLOW}$NEW_TAG${NC}"
 else
-    version=$version_input
+    # Remove o 'v' inicial para fazer a conta (ex: 1.0.5)
+    VERSION=${LAST_TAG#v}
+    
+    # Quebra em partes pelo ponto (Major.Minor.Patch)
+    IFS='.' read -r -a parts <<< "$VERSION"
+    MAJOR=${parts[0]}
+    MINOR=${parts[1]}
+    PATCH=${parts[2]}
+    
+    # Soma 1 no Patch (último número)
+    NEW_PATCH=$((PATCH + 1))
+    
+    # Monta a nova tag
+    NEW_TAG="v$MAJOR.$MINOR.$NEW_PATCH"
+    echo -e "Versão Anterior: $LAST_TAG"
+    echo -e "NOVA VERSÃO:     ${YELLOW}$NEW_TAG${NC}"
 fi
 
-echo -e "Você está prestes a lançar a versão: ${GREEN}$version${NC}"
-read -p "Pressione [Enter] para confirmar ou [Ctrl+C] para cancelar..."
+# Pausa rápida para você conferir (opcional, pode remover o read se quiser 100% direto)
+read -p "Pressione [Enter] para confirmar o lançamento da $NEW_TAG..."
 
-# 6. Envia a Main (Gera a imagem 'latest')
-echo -e "${GREEN}4. Enviando atualizações para a Main...${NC}"
+# 5. Envia para o GitHub (Dispara o Actions)
+echo -e "${GREEN}4. Enviando atualizações para o GitHub...${NC}"
+
+# A: Push na Main (Atualiza a imagem 'latest')
 git push origin main
 
-# 7. Cria e envia a Tag (Gera a imagem com versão fixa)
-echo -e "${GREEN}5. Criando e enviando a Tag $version...${NC}"
-git tag -a "$version" -m "Release $version"
-git push origin "$version"
+# B: Cria e envia a Tag (Cria a imagem fixa 'v1.0.x')
+git tag -a "$NEW_TAG" -m "Release automática $NEW_TAG"
+git push origin "$NEW_TAG"
 
-# 8. Volta para a dev
-echo -e "${GREEN}6. Voltando para a branch dev...${NC}"
+# 6. Volta para a branch de trabalho
+echo -e "${GREEN}5. Voltando para Dev...${NC}"
 git checkout dev
 
-echo -e "${YELLOW}--- SUCESSO! Deploy finalizado. ---${NC}"
-echo -e "O GitHub Actions já deve estar construindo as imagens 'latest' e '$version'."
+echo -e "${YELLOW}>>> SUCESSO! Deploy da versão $NEW_TAG iniciado.${NC}"
