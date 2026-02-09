@@ -2,6 +2,7 @@ from app import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import pyotp # Adicionado para 2FA
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -23,6 +24,10 @@ class User(UserMixin, db.Model):
     token_expiration = db.Column(db.DateTime, nullable=True)
     pending_email = db.Column(db.String(150), nullable=True)
 
+    # NOVAS COLUNAS 2FA
+    two_factor_secret = db.Column(db.String(32), nullable=True)
+    two_factor_method = db.Column(db.String(10), nullable=True) # 'app' ou 'email'
+
     # Relacionamentos
     categories = db.relationship('Category', backref='user', lazy=True)
     accounts = db.relationship('BankAccount', backref='user', lazy=True)
@@ -38,6 +43,15 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    # Método auxiliar para gerar URI do QR Code
+    def get_totp_uri(self):
+        if not self.two_factor_secret:
+            return None
+        return pyotp.totp.TOTP(self.two_factor_secret).provisioning_uri(
+            name=self.email, 
+            issuer_name='Financeiro App'
+        )
 
 class Category(db.Model):
     __tablename__ = 'categories'
@@ -63,7 +77,6 @@ class CreditCard(db.Model):
     closing_day = db.Column(db.Integer, nullable=False)
     due_day = db.Column(db.Integer, nullable=False)
     
-    # NOVAS COLUNAS: 
     # Brand = Bandeira (Visa, Master) -> Define o Ícone
     # Bank = Banco (Nubank, Itaú) -> Define a Cor
     brand = db.Column(db.String(50), default='other') 

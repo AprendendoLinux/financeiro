@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app, make_response
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
@@ -7,6 +7,11 @@ from app.email_utils import send_email
 from datetime import date, datetime, timedelta
 import re
 import secrets
+import pyotp
+import qrcode
+import io
+import base64
+from itsdangerous import URLSafeTimedSerializer
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -25,6 +30,67 @@ def validate_email_format(email):
 def get_base_url():
     return request.host_url.rstrip('/')
 
+def get_totp_object(user, method=None):
+    """
+    Retorna o objeto TOTP configurado corretamente.
+    Se 'method' for passado (durante setup), usa ele. 
+    Se não, usa o método salvo no banco (login).
+    """
+    target_method = method if method else user.two_factor_method
+    
+    if target_method == 'email':
+        # Intervalo de 3600 segundos (1 hora) para E-mail
+        return pyotp.TOTP(user.two_factor_secret, interval=3600)
+    else:
+        # Padrão 30 segundos para App
+        return pyotp.TOTP(user.two_factor_secret)
+
+def send_2fa_email(user, method=None):
+    """Envia o código TOTP por e-mail com validade estendida."""
+    # Passamos o method explicitamente para garantir que use o intervalo de 1h
+    # mesmo que o usuário ainda não tenha ativado (durante o setup)
+    totp = get_totp_object(user, method)
+    code = totp.now()
+    
+    # HTML Personalizado para destaque (Sem botão)
+    html_body = f"""
+    <div style="text-align: center; padding: 20px;">
+        <p style="color: #64748b; font-size: 16px;">Seu código de verificação é:</p>
+        <h1 style="color: #2563eb; font-size: 48px; letter-spacing: 5px; margin: 20px 0; font-family: monospace;">{code}</h1>
+        <p style="color: #94a3b8; font-size: 14px;">Este código é válido por aproximadamente 1 hora.</p>
+    </div>
+    """
+    
+    send_email(
+        to_email=user.email,
+        subject="Seu Código de Acesso",
+        title="Verificação de Segurança",
+        body_content=html_body,
+        action_url=None, 
+        action_text=None
+    )
+
+def set_trusted_cookie(response, user_id):
+    """Define o cookie de dispositivo confiável por 30 dias"""
+    s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    token = s.dumps(user_id, salt='trusted-device')
+    # Cookie dura 30 dias. 
+    response.set_cookie('trusted_device', token, max_age=30*24*3600, httponly=True, secure=False)
+
+def is_device_trusted(user_id):
+    """Verifica se o cookie de dispositivo confiável é válido"""
+    token = request.cookies.get('trusted_device')
+    if not token:
+        return False
+    
+    s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    try:
+        # Valida o token (max_age garante os 30 dias)
+        data = s.loads(token, salt='trusted-device', max_age=30*24*3600)
+        return data == user_id
+    except:
+        return False
+
 # --- ROTAS ---
 
 @auth_bp.route('/', methods=['GET', 'POST'])
@@ -35,20 +101,94 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        remember = True if request.form.get('remember') else False
         
         user = User.query.filter_by(email=email).first()
         
         if user and user.check_password(password):
-            if not user.is_verified:
-                flash('Sua conta ainda não foi ativada. Verifique seu e-mail.', 'warning')
-                return render_template('login.html')
+            # VERIFICAÇÃO DE 2FA
+            if user.two_factor_method:
+                # Se o dispositivo for confiável, pula o 2FA
+                if is_device_trusted(user.id):
+                    login_user(user, remember=remember)
+                    return redirect(url_for('finance.dashboard'))
 
-            login_user(user)
+                session['2fa_user_id'] = user.id
+                session['2fa_remember'] = remember
+                
+                if user.two_factor_method == 'email':
+                    try:
+                        # Aqui o método já está salvo, então não precisamos forçar
+                        send_2fa_email(user)
+                        flash('Código de verificação enviado para seu e-mail.', 'info')
+                    except Exception as e:
+                        print(f"Erro ao enviar 2FA email: {e}")
+                        flash('Erro ao enviar e-mail. Tente novamente.', 'danger')
+
+                return redirect(url_for('auth.verify_2fa_login'))
+
+            # Login padrão (sem 2FA)
+            login_user(user, remember=remember)
             return redirect(url_for('finance.dashboard'))
         else:
             flash('E-mail ou senha incorretos.', 'danger')
             
     return render_template('login.html')
+
+@auth_bp.route('/login/2fa', methods=['GET', 'POST'])
+def verify_2fa_login():
+    if '2fa_user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    user = User.query.get(session['2fa_user_id'])
+    if not user:
+        session.pop('2fa_user_id', None)
+        return redirect(url_for('auth.login'))
+    
+    if request.method == 'POST':
+        code = request.form.get('code')
+        trust_device = request.form.get('trust_device') # Checkbox
+        
+        if code: code = code.replace(" ", "")
+        
+        # Usa o objeto TOTP correto (1h se email, 30s se app)
+        totp = get_totp_object(user)
+        
+        # valid_window=1 permite pequena tolerância de tempo
+        if totp.verify(code, valid_window=1):
+            remember = session.get('2fa_remember', False)
+            session.pop('2fa_user_id', None)
+            session.pop('2fa_remember', None)
+            
+            login_user(user, remember=remember)
+            
+            resp = make_response(redirect(url_for('finance.dashboard')))
+            
+            # Se marcou "Confiar neste dispositivo"
+            if trust_device:
+                set_trusted_cookie(resp, user.id)
+                
+            return resp
+        else:
+            flash('Código inválido ou expirado.', 'danger')
+            
+    return render_template('verify_2fa.html', method=user.two_factor_method)
+
+@auth_bp.route('/login/2fa/resend')
+def resend_2fa_code():
+    if '2fa_user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    user = User.query.get(session['2fa_user_id'])
+    if user and user.two_factor_method == 'email':
+        try:
+            send_2fa_email(user)
+            flash('Código reenviado com sucesso!', 'success')
+        except Exception as e:
+            print(f"Erro reenvio: {e}")
+            flash('Erro ao enviar e-mail.', 'danger')
+    
+    return redirect(url_for('auth.verify_2fa_login'))
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -56,121 +196,53 @@ def register():
         return redirect(url_for('finance.dashboard'))
         
     if request.method == 'POST':
-        first_name = request.form.get('name')
-        last_name = request.form.get('last_name')
-        birth_date_str = request.form.get('birth_date') # Captura Data de Nascimento
+        name = request.form.get('name')
         email = request.form.get('email')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
         
-        # Processamento de Datas
-        try:
-            birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date() if birth_date_str else None
-        except ValueError:
-            birth_date = None
-
-        # ALTERAÇÃO: Força a data de início para ser sempre HOJE
-        start_date = date.today()
-        
-        # Validações
-        if not validate_email_format(email):
-            flash('Formato de e-mail inválido.', 'warning')
-            return redirect(url_for('auth.register'))
-            
-        if User.query.filter_by(email=email).first():
-            flash('E-mail já cadastrado.', 'warning')
-            return redirect(url_for('auth.register'))
-            
         if password != confirm_password:
-            flash('Senhas não conferem.', 'warning')
+            flash('As senhas não conferem.', 'warning')
             return redirect(url_for('auth.register'))
             
         if not validate_password_complexity(password):
-            flash('A senha deve ter no mínimo 6 caracteres, incluir uma maiúscula, um número e um símbolo.', 'warning')
+            flash('A senha deve ter no mínimo 6 caracteres, conter letras maiúsculas, números e símbolos.', 'warning')
             return redirect(url_for('auth.register'))
             
-        # Criação do Usuário
-        new_user = User(
-            name=first_name,
-            last_name=last_name,
-            email=email,
-            password_hash=generate_password_hash(password),
-            birth_date=birth_date, # Salva Data de Nascimento
-            start_date=start_date,
-            is_verified=False
-        )
+        if User.query.filter_by(email=email).first():
+            flash('Este e-mail já está cadastrado.', 'danger')
+            return redirect(url_for('auth.register'))
+            
+        new_user = User(name=name, email=email)
+        new_user.set_password(password)
+        new_user.start_date = date.today().replace(day=1)
         
-        token = secrets.token_urlsafe(32)
-        new_user.auth_token = token
-        new_user.token_expiration = datetime.utcnow() + timedelta(hours=24)
-
         db.session.add(new_user)
         db.session.commit()
         
-        # --- DADOS PADRÃO ---
+        # Cria contas e categorias padrão
         default_account = BankAccount(user_id=new_user.id, name='Carteira de dinheiro', current_balance=0.0)
         db.session.add(default_account)
         
         default_cats = [
-            ('Salário', 'receita', '#10b981'), 
-            ('Investimentos', 'receita', '#10b981'),
-            ('Extras', 'receita', '#10b981'), 
-            ('Moradia', 'despesa', '#ef4444'), 
-            ('Alimentação', 'despesa', '#ef4444'),
-            ('Transporte', 'despesa', '#ef4444'), 
-            ('Saúde', 'despesa', '#ef4444'),
-            ('Educação', 'despesa', '#ef4444'), 
-            ('Lazer', 'despesa', '#ef4444'),
-            ('Compras', 'despesa', '#ef4444')
+            ('Salário', 'receita', '#10b981'), ('Investimentos', 'receita', '#10b981'), 
+            ('Extras', 'receita', '#10b981'),
+            ('Moradia', 'despesa', '#ef4444'), ('Alimentação', 'despesa', '#ef4444'), 
+            ('Transporte', 'despesa', '#ef4444'), ('Saúde', 'despesa', '#ef4444'),
+            ('Educação', 'despesa', '#ef4444'), ('Lazer', 'despesa', '#ef4444'),
+            ('Compras', 'despesa', '#ef4444'),
+            ('Transferência', 'transferencia', '#3B82F6'),
+            ('Pagamento', 'pagamento', '#EF4444')
         ]
-        
         for cn, ct, cc in default_cats:
             db.session.add(Category(user_id=new_user.id, name=cn, type=ct, color_hex=cc))
             
         db.session.commit()
         
-        session.clear() 
-
-        confirm_link = url_for('auth.confirm_email', token=token, _external=True)
-        try:
-            send_email(
-                to_email=email,
-                subject="Ative sua conta",
-                title="Bem-vindo ao Financeiro!",
-                body_content=f"Olá {first_name}, obrigado por se cadastrar. Clique no botão abaixo para ativar sua conta.",
-                action_url=confirm_link,
-                action_text="Ativar Conta"
-            )
-            flash('Cadastro realizado! Verifique seu e-mail para ativar a conta.', 'success')
-        except Exception as e:
-            print(f"Erro de envio de email: {e}")
-            flash('Erro ao enviar e-mail de ativação. Contate o suporte.', 'warning')
-        
+        flash('Cadastro realizado com sucesso! Faça login.', 'success')
         return redirect(url_for('auth.login'))
         
     return render_template('register.html')
-
-@auth_bp.route('/confirm/<token>')
-def confirm_email(token):
-    user = User.query.filter_by(auth_token=token).first()
-    
-    if not user:
-        flash('Link de ativação inválido.', 'danger')
-        return redirect(url_for('auth.login'))
-        
-    if user.token_expiration and user.token_expiration < datetime.utcnow():
-        flash('Link expirado. Faça login para solicitar um novo.', 'warning')
-        return redirect(url_for('auth.login'))
-        
-    user.is_verified = True
-    user.auth_token = None
-    user.token_expiration = None
-    db.session.commit()
-    
-    session.clear()
-    
-    flash('Conta ativada! Faça login para continuar.', 'success')
-    return redirect(url_for('auth.login'))
 
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
@@ -184,15 +256,15 @@ def forgot_password():
             user.token_expiration = datetime.utcnow() + timedelta(hours=1)
             db.session.commit()
             
-            reset_link = url_for('auth.reset_password', token=token, _external=True)
+            link = f"{get_base_url()}/reset-password/{token}"
             
             try:
                 send_email(
                     to_email=user.email,
                     subject="Recuperação de Senha",
-                    title="Redefinir Senha",
-                    body_content=f"Olá {user.name}. Recebemos uma solicitação para redefinir sua senha.",
-                    action_url=reset_link,
+                    title="Recuperar Senha",
+                    body_content=f"Olá {user.name}. Recebemos um pedido para redefinir sua senha. Se não foi você, ignore este e-mail.",
+                    action_url=link,
                     action_text="Redefinir Senha"
                 )
             except Exception as e:
@@ -233,6 +305,92 @@ def reset_password(token):
         return redirect(url_for('auth.login'))
         
     return render_template('reset_password.html')
+
+# --- ROTAS DE CONFIGURAÇÃO DO 2FA ---
+
+@auth_bp.route('/settings/2fa/setup', methods=['POST'])
+@login_required
+def setup_2fa():
+    method = request.form.get('method')
+    
+    # Se já existir segredo, reutiliza. Senão, cria novo.
+    if not current_user.two_factor_secret:
+        current_user.two_factor_secret = pyotp.random_base32()
+        db.session.commit()
+    
+    resp = {
+        'status': 'ok',
+        'method': method,
+        'secret': current_user.two_factor_secret
+    }
+    
+    if method == 'app':
+        # Gera QR Code (Padrão 30s)
+        # Nota: Provisioning URI usa o padrão (30s) para apps autenticadores.
+        totp = pyotp.TOTP(current_user.two_factor_secret)
+        uri = totp.provisioning_uri(name=current_user.email, issuer_name='Financeiro App')
+        
+        img = qrcode.make(uri)
+        buffered = io.BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        resp['qr_code'] = f"data:image/png;base64,{img_str}"
+        
+    elif method == 'email':
+        # Envia email (forçando intervalo de 1h)
+        try:
+            send_2fa_email(current_user, method='email')
+        except Exception as e:
+            print(f"Erro ao enviar email de setup: {e}")
+            return jsonify({'status': 'error', 'message': 'Erro ao enviar e-mail.'}), 500
+        
+    return jsonify(resp)
+
+@auth_bp.route('/settings/2fa/enable', methods=['POST'])
+@login_required
+def enable_2fa():
+    code = request.form.get('code')
+    method = request.form.get('method')
+    trust_device = request.form.get('trust_device') # Checkbox na ativação
+    
+    if code: code = code.replace(" ", "")
+    
+    # Validação inicial usa a lógica específica do método escolhido
+    if method == 'email':
+        totp = pyotp.TOTP(current_user.two_factor_secret, interval=3600)
+    else:
+        totp = pyotp.TOTP(current_user.two_factor_secret)
+    
+    if totp.verify(code, valid_window=1):
+        current_user.two_factor_method = method
+        db.session.commit()
+        
+        flash(f'Autenticação de Dois Fatores ({method.upper()}) ativada com sucesso!', 'success')
+        
+        resp = make_response(redirect(url_for('settings.index', tab='account')))
+        
+        # Opção de confiar já na ativação
+        if trust_device:
+            set_trusted_cookie(resp, current_user.id)
+            
+        return resp
+    else:
+        flash('Código incorreto. A ativação falhou.', 'danger')
+        return redirect(url_for('settings.index', tab='account'))
+
+@auth_bp.route('/settings/2fa/disable', methods=['POST'])
+@login_required
+def disable_2fa():
+    current_user.two_factor_method = None
+    current_user.two_factor_secret = None
+    db.session.commit()
+    
+    # Remove cookie de confiança também
+    resp = make_response(redirect(url_for('settings.index', tab='account')))
+    resp.set_cookie('trusted_device', '', expires=0)
+    
+    flash('Autenticação de Dois Fatores desativada.', 'warning')
+    return resp
 
 @auth_bp.route('/logout')
 @login_required

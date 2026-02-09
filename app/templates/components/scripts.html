@@ -1,6 +1,6 @@
 <script>
     // ==========================================
-    // 0. CARROSSEL DE CONTAS E CARTÕES (ATUALIZADO)
+    // 0. CARROSSEL DE CONTAS E CARTÕES
     // ==========================================
     
     function moveCarousel(type, direction) {
@@ -460,7 +460,6 @@
         openModal('edit-account');
     }
 
-    // ATUALIZADO: Parâmetros BRAND e BANK
     function openEditCard(id, name, limit, closing, due, brand, bank) {
         document.getElementById('form-edit-card').action = '/settings/card/edit/' + id;
         document.getElementById('edit-card-name').value = name;
@@ -468,13 +467,11 @@
         document.getElementById('edit-card-closing').value = closing;
         document.getElementById('edit-card-due').value = due;
         
-        // Define o Banco no select
         const bankSelect = document.getElementById('edit-card-bank');
         if (bankSelect) {
             bankSelect.value = bank || 'other';
         }
 
-        // Define a Bandeira no select
         const brandSelect = document.getElementById('edit-card-brand');
         if (brandSelect) {
             brandSelect.value = brand || 'other';
@@ -603,6 +600,66 @@
         if (!currentDangerAction) return;
         const formId = currentDangerAction === 'reset' ? 'form-reset' : 'form-delete';
         document.getElementById(formId).submit();
+    }
+
+    // ==========================================
+    // 3. LÓGICA DE 2FA (ATUALIZADO)
+    // ==========================================
+
+    function start2FASetup(method) {
+        closeModal('setup-2fa-choice');
+        
+        const formData = new FormData();
+        formData.append('method', method);
+        
+        fetch('/settings/2fa/setup', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status !== 'ok') {
+                openNotificationModal('danger', 'Erro ao configurar 2FA: ' + (data.message || 'Erro desconhecido'));
+                return;
+            }
+
+            const qrContainer = document.getElementById('qr-container');
+            const qrImage = document.getElementById('qr-image');
+            const secretDisplay = document.getElementById('secret-key-display');
+            const instruction = document.getElementById('setup-instruction');
+            const inputMethod = document.getElementById('input-2fa-method');
+            
+            inputMethod.value = data.method;
+            
+            if (data.method === 'app') {
+                qrContainer.classList.remove('hidden');
+                qrImage.src = data.qr_code;
+                secretDisplay.innerText = data.secret; // Mostra a chave
+                instruction.innerText = "Escaneie o QR Code ou digite a chave acima no seu app autenticador.";
+            } else {
+                qrContainer.classList.add('hidden');
+                instruction.innerHTML = "Enviamos um código de verificação para o seu <strong>e-mail cadastrado</strong>.<br>Insira-o abaixo para confirmar e ativar a segurança.";
+            }
+            
+            openModal('setup-2fa-confirm');
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            openNotificationModal('danger', 'Erro de conexão ao configurar 2FA.');
+        });
+    }
+    
+    function copySecret() {
+        const secretText = document.getElementById('secret-key-display').innerText;
+        navigator.clipboard.writeText(secretText).then(() => {
+            // Feedback visual simples
+            const btn = document.querySelector('#secret-key-display + button');
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check text-emerald-400"></i>';
+            setTimeout(() => {
+                btn.innerHTML = originalIcon;
+            }, 2000);
+        });
     }
 
     document.addEventListener('DOMContentLoaded', () => {

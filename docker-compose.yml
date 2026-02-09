@@ -44,6 +44,8 @@ services:
       - SMTP_PASSWORD=xxxxxxxxxxxxxx
       - SMTP_FROM=Sistema de Enquetes <seuemail@gmail.com>
     volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
       - /srv/financeiro/uploads:/app/static/uploads
     depends_on:
       - db-financeiro
