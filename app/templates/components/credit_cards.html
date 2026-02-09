@@ -22,31 +22,59 @@
         <div class="relative w-full h-full min-h-[220px]">
             {% for card in cards_data|sort(attribute='invoice_amount', reverse=True) %}
             
-            {# --- Lógica Visual e Ícones --- #}
-            {% set card_name_lower = card.obj.name|lower %}
+            {# --- Lógica Visual Baseada em BANCO e BANDEIRA Separados --- #}
+            
+            {# 1. Ícone pela BANDEIRA (Brand) #}
+            {% set brand = card.obj.brand|lower if card.obj.brand else 'other' %}
             {% set brand_icon = "fa-credit-card" %}
             
-            {% if 'visa' in card_name_lower %}
+            {% if brand == 'visa' %}
                 {% set brand_icon = "fa-cc-visa" %}
-            {% elif 'master' in card_name_lower %}
+            {% elif brand == 'mastercard' %}
                 {% set brand_icon = "fa-cc-mastercard" %}
-            {% elif 'amex' in card_name_lower or 'american' in card_name_lower %}
+            {% elif brand == 'amex' %}
                 {% set brand_icon = "fa-cc-amex" %}
             {% endif %}
 
-            {# Cores baseadas no status #}
+            {# 2. Cor pelo BANCO (Bank) #}
+            {% set bank = card.obj.bank|lower if card.obj.bank else 'other' %}
+            
             {% if card.is_paid %}
+                {# Fatura Paga = Verde (Prioridade Máxima) #}
                 {% set bg_card = "bg-gradient-to-br from-emerald-800 to-emerald-950" %}
                 {% set status_text = "Fatura Paga" %}
                 {% set status_class = "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" %}
                 {% set bar_color = "bg-emerald-400" %}
             {% else %}
-                {% set bg_card = "bg-gradient-to-br from-slate-700 to-slate-900" %}
-                {% if 'nubank' in card_name_lower %}{% set bg_card = "bg-gradient-to-br from-purple-900 to-purple-950" %}{% endif %}
-                {% if 'itaú' in card_name_lower %}{% set bg_card = "bg-gradient-to-br from-orange-800 to-slate-900" %}{% endif %}
+                {# Fatura Aberta: Cores por BANCO #}
+                {% if bank == 'nubank' %}
+                    {% set bg_card = "bg-gradient-to-br from-purple-900 to-purple-950" %}
+                {% elif bank == 'itau' %}
+                    {% set bg_card = "bg-gradient-to-br from-orange-800 to-slate-900" %}
+                {% elif bank == 'inter' %}
+                    {% set bg_card = "bg-gradient-to-br from-orange-600 to-orange-800" %}
+                {% elif bank == 'bradesco' %}
+                    {% set bg_card = "bg-gradient-to-br from-red-800 to-red-950" %}
+                {% elif bank == 'santander' %}
+                    {% set bg_card = "bg-gradient-to-br from-red-700 to-red-900" %}
+                {% elif bank == 'bb' %}
+                    {% set bg_card = "bg-gradient-to-br from-yellow-500 to-yellow-700" %}
+                {% elif bank == 'c6' %}
+                    {% set bg_card = "bg-gradient-to-br from-slate-900 to-black" %}
+                {% elif bank == 'caixa' %}
+                    {% set bg_card = "bg-gradient-to-br from-blue-700 to-blue-900" %}
+                {% elif bank == 'btg' %}
+                    {% set bg_card = "bg-gradient-to-br from-blue-900 to-slate-900" %}
+                {% elif bank == 'xp' %}
+                    {% set bg_card = "bg-gradient-to-br from-gray-900 to-black border-t border-yellow-500/30" %}
+                {% else %}
+                    {# Padrão (Outros Bancos) #}
+                    {% set bg_card = "bg-gradient-to-br from-slate-700 to-slate-900" %}
+                {% endif %}
                 
                 {% set status_text = "Fatura Aberta" %}
                 {% set status_class = "bg-sky-500/20 text-sky-300 border-sky-500/30" %}
+                
                 {% if card.percent > 90 %}
                     {% set bar_color = "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" %}
                 {% else %}

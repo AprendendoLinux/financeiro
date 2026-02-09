@@ -27,10 +27,11 @@ class User(UserMixin, db.Model):
     categories = db.relationship('Category', backref='user', lazy=True)
     accounts = db.relationship('BankAccount', backref='user', lazy=True)
     cards = db.relationship('CreditCard', backref='user', lazy=True)
+    
+    # Transações e Fixos
+    transactions = db.relationship('Transaction', backref='user', lazy=True)
     fixed_expenses = db.relationship('FixedExpense', backref='user', lazy=True)
     fixed_revenues = db.relationship('FixedRevenue', backref='user', lazy=True)
-    transactions = db.relationship('Transaction', backref='user', lazy=True)
-    # monthly_closings removido (Simplificação)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -43,8 +44,8 @@ class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    type = db.Column(db.String(20), nullable=False)
-    color_hex = db.Column(db.String(7), default='#64748B')
+    type = db.Column(db.String(20), nullable=False) 
+    color_hex = db.Column(db.String(7), default="#64748b")
 
 class BankAccount(db.Model):
     __tablename__ = 'bank_accounts'
@@ -61,6 +62,12 @@ class CreditCard(db.Model):
     limit_amount = db.Column(db.Numeric(10, 2), nullable=False)
     closing_day = db.Column(db.Integer, nullable=False)
     due_day = db.Column(db.Integer, nullable=False)
+    
+    # NOVAS COLUNAS: 
+    # Brand = Bandeira (Visa, Master) -> Define o Ícone
+    # Bank = Banco (Nubank, Itaú) -> Define a Cor
+    brand = db.Column(db.String(50), default='other') 
+    bank = db.Column(db.String(50), default='other')
 
 class FixedExpense(db.Model):
     __tablename__ = 'fixed_expenses'
@@ -69,11 +76,9 @@ class FixedExpense(db.Model):
     description = db.Column(db.String(200), nullable=False)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     day_of_month = db.Column(db.Integer, nullable=False)
-    
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
-    account_id = db.Column(db.Integer, db.ForeignKey('bank_accounts.id'), nullable=True)
-    card_id = db.Column(db.Integer, db.ForeignKey('credit_cards.id'), nullable=True)
-    
+    account_id = db.Column(db.Integer, db.ForeignKey('bank_accounts.id'))
+    card_id = db.Column(db.Integer, db.ForeignKey('credit_cards.id')) # Opcional
     category = db.relationship('Category')
     account = db.relationship('BankAccount')
     card = db.relationship('CreditCard')
@@ -109,7 +114,7 @@ class Transaction(db.Model):
     installment_identifier = db.Column(db.String(50), nullable=True)
     installment_current = db.Column(db.Integer, nullable=True)
     installment_total = db.Column(db.Integer, nullable=True)
-    total_purchase_amount = db.Column(db.Numeric(10, 2), nullable=True)
+    
     category = db.relationship('Category')
     account = db.relationship('BankAccount')
     card = db.relationship('CreditCard')

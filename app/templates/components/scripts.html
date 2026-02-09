@@ -460,12 +460,26 @@
         openModal('edit-account');
     }
 
-    function openEditCard(id, name, limit, closing, due) {
+    // ATUALIZADO: Parâmetros BRAND e BANK
+    function openEditCard(id, name, limit, closing, due, brand, bank) {
         document.getElementById('form-edit-card').action = '/settings/card/edit/' + id;
         document.getElementById('edit-card-name').value = name;
         document.getElementById('edit-card-limit').value = limit;
         document.getElementById('edit-card-closing').value = closing;
         document.getElementById('edit-card-due').value = due;
+        
+        // Define o Banco no select
+        const bankSelect = document.getElementById('edit-card-bank');
+        if (bankSelect) {
+            bankSelect.value = bank || 'other';
+        }
+
+        // Define a Bandeira no select
+        const brandSelect = document.getElementById('edit-card-brand');
+        if (brandSelect) {
+            brandSelect.value = brand || 'other';
+        }
+        
         openModal('edit-card');
     }
 

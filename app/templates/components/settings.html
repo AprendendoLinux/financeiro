@@ -147,16 +147,46 @@
                 <form action="{{ url_for('settings.add_card') }}" method="POST" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-400 mb-1">Apelido</label>
-                        <input type="text" name="name" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-purple-500">
+                        <input type="text" name="name" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-purple-500" placeholder="Ex: Meu Roxinho">
                     </div>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Banco (Cor)</label>
+                            <select name="bank" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm">
+                                <option value="other">Outro / Padrão</option>
+                                <option value="nubank">Nubank</option>
+                                <option value="itau">Itaú</option>
+                                <option value="bradesco">Bradesco</option>
+                                <option value="santander">Santander</option>
+                                <option value="inter">Inter</option>
+                                <option value="bb">Banco do Brasil</option>
+                                <option value="c6">C6 Bank</option>
+                                <option value="caixa">Caixa</option>
+                                <option value="btg">BTG Pactual</option>
+                                <option value="xp">XP</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Bandeira (Ícone)</label>
+                            <select name="brand" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm">
+                                <option value="mastercard">Mastercard</option>
+                                <option value="visa">Visa</option>
+                                <option value="elo">Elo</option>
+                                <option value="amex">Amex</option>
+                                <option value="hipercard">Hipercard</option>
+                                <option value="other">Outra</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-slate-400 mb-1">Limite Total</label>
                         <input type="number" step="0.01" name="limit" required class="currency-input w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-purple-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-400 mb-1">Gasto Atual na Fatura (Opcional)</label>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">Gasto Atual (Opcional)</label>
                         <input type="number" step="0.01" name="initial_invoice_value" class="currency-input w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:border-purple-500" placeholder="Ex: 500.00">
-                        <p class="text-xs text-slate-500 mt-1">Caso já tenha utilizado o cartão neste mês.</p>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
@@ -185,6 +215,7 @@
                         <thead class="bg-slate-900 text-slate-200 uppercase font-medium">
                             <tr>
                                 <th class="px-6 py-3">Cartão</th>
+                                <th class="px-6 py-3 hidden sm:table-cell">Banco/Bandeira</th>
                                 <th class="px-6 py-3">Limite</th>
                                 <th class="px-6 py-3 text-center">Fech. / Venc.</th>
                                 <th class="px-6 py-3 text-right">Ações</th>
@@ -193,16 +224,21 @@
                         <tbody class="divide-y divide-slate-700">
                             {% for card in user.cards %}
                             <tr>
-                                <td class="px-6 py-4 font-medium text-white">{{ card.name }}</td>
+                                <td class="px-6 py-4 font-medium text-white">
+                                    {{ card.name }}
+                                </td>
+                                <td class="px-6 py-4 text-slate-300 capitalize hidden sm:table-cell">
+                                    {{ card.bank }} / {{ card.brand }}
+                                </td>
                                 <td class="px-6 py-4 text-slate-300">R$ {{ "%.2f"|format(card.limit_amount) }}</td>
                                 <td class="px-6 py-4 text-center">Dia {{ card.closing_day }} / Dia {{ card.due_day }}</td>
                                 <td class="px-6 py-4 text-right space-x-2">
-                                    <button onclick="openEditCard('{{ card.id }}', '{{ card.name }}', '{{ card.limit_amount }}', '{{ card.closing_day }}', '{{ card.due_day }}')" class="text-slate-500 hover:text-blue-400 transition"><i class="fas fa-edit"></i></button>
+                                    <button onclick="openEditCard('{{ card.id }}', '{{ card.name }}', '{{ card.limit_amount }}', '{{ card.closing_day }}', '{{ card.due_day }}', '{{ card.brand }}', '{{ card.bank }}')" class="text-slate-500 hover:text-blue-400 transition"><i class="fas fa-edit"></i></button>
                                     <button type="button" onclick="openDeleteModal('{{ url_for('settings.delete_card', id=card.id) }}', 'Tem certeza que deseja excluir este cartão?')" class="text-slate-500 hover:text-red-400 transition"><i class="fas fa-trash"></i></button>
                                 </td>
                             </tr>
                             {% else %}
-                            <tr><td colspan="4" class="px-6 py-4 text-center italic">Nenhum cartão cadastrado.</td></tr>
+                            <tr><td colspan="5" class="px-6 py-4 text-center italic">Nenhum cartão cadastrado.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -211,8 +247,75 @@
         </div>
     </div>
 
+    <div id="modal-edit-card" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeEditModal('card')"></div>
+            <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
+                <form id="form-edit-card" method="POST" class="p-6 space-y-4">
+                    <h3 class="text-lg font-medium text-white mb-2">Editar Cartão</h3>
+                    <input type="text" name="name" id="edit-card-name" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white" placeholder="Nome/Apelido">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Banco (Cor)</label>
+                            <select name="bank" id="edit-card-bank" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm">
+                                <option value="other">Outro / Padrão</option>
+                                <option value="nubank">Nubank</option>
+                                <option value="itau">Itaú</option>
+                                <option value="bradesco">Bradesco</option>
+                                <option value="santander">Santander</option>
+                                <option value="inter">Inter</option>
+                                <option value="bb">Banco do Brasil</option>
+                                <option value="c6">C6 Bank</option>
+                                <option value="caixa">Caixa</option>
+                                <option value="btg">BTG Pactual</option>
+                                <option value="xp">XP</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Bandeira (Ícone)</label>
+                            <select name="brand" id="edit-card-brand" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm">
+                                <option value="mastercard">Mastercard</option>
+                                <option value="visa">Visa</option>
+                                <option value="elo">Elo</option>
+                                <option value="amex">Amex</option>
+                                <option value="hipercard">Hipercard</option>
+                                <option value="other">Outra</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <input type="number" step="0.01" name="limit" id="edit-card-limit" required class="currency-input w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white" placeholder="Limite">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Fechamento</label>
+                            <select name="closing_day" id="edit-card-closing" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-center">
+                                {% for i in range(1, 32) %}
+                                    <option value="{{ i }}">{{ i }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Vencimento</label>
+                            <select name="due_day" id="edit-card-due" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-center">
+                                {% for i in range(1, 32) %}
+                                    <option value="{{ i }}">{{ i }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-2">
+                        <button type="button" onclick="closeEditModal('card')" class="px-4 py-2 text-slate-400 hover:text-white">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div id="content-account" class="tab-content hidden">
-        
+        {% include "components/account_settings_content.html" ignore missing %}
         <div class="bg-slate-800 rounded-lg p-8 mb-6 border border-slate-700 shadow-lg flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-8">
             <div class="relative group cursor-pointer" onclick="document.getElementById('avatarInput').click()">
                 {% if user.avatar_path %}
@@ -246,7 +349,6 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
             <div class="bg-slate-800 p-6 rounded-lg border border-slate-700 hover:border-slate-500 transition group">
                 <div class="w-12 h-12 bg-blue-900/50 text-blue-400 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition">
                     <i class="fas fa-user-edit text-xl"></i>
@@ -257,7 +359,6 @@
                     Editar Perfil
                 </button>
             </div>
-
             <div class="bg-slate-800 p-6 rounded-lg border border-slate-700 hover:border-slate-500 transition group">
                 <div class="w-12 h-12 bg-emerald-900/50 text-emerald-400 rounded-lg flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition">
                     <i class="fas fa-shield-alt text-xl"></i>
@@ -273,7 +374,6 @@
                     </button>
                 </div>
             </div>
-
             <div class="bg-slate-800 p-6 rounded-lg border border-red-900/30 hover:border-red-500 transition group">
                 <div class="w-12 h-12 bg-red-900/30 text-red-400 rounded-lg flex items-center justify-center mb-4 group-hover:bg-red-600 group-hover:text-white transition">
                     <i class="fas fa-radiation text-xl"></i>
@@ -290,7 +390,38 @@
                 </div>
             </div>
         </div>
+    </div>
 
+    <div id="modal-edit-category" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeEditModal('category')"></div>
+            <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
+                <form id="form-edit-category" method="POST" class="p-6">
+                    <h3 class="text-lg font-medium text-white mb-4">Editar Categoria</h3>
+                    <input type="text" name="name" id="edit-cat-name" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white mb-4">
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeEditModal('category')" class="px-4 py-2 text-slate-400 hover:text-white">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div id="modal-edit-account" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeEditModal('account')"></div>
+            <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
+                <form id="form-edit-account" method="POST" class="p-6">
+                    <h3 class="text-lg font-medium text-white mb-4">Editar Conta</h3>
+                    <input type="text" name="name" id="edit-acc-name" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white mb-4">
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeEditModal('account')" class="px-4 py-2 text-slate-400 hover:text-white">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <div id="modal-edit-profile" class="hidden fixed inset-0 z-50 overflow-y-auto">
@@ -473,73 +604,6 @@
                     <div class="flex justify-end space-x-3">
                         <button type="button" onclick="closeModal('delete-account')" class="px-4 py-2 text-slate-400 hover:text-white">Cancelar</button>
                         <button type="button" onclick="openDangerConfirm('delete')" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded">Excluir Definitivamente</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-edit-category" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeEditModal('category')"></div>
-            <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
-                <form id="form-edit-category" method="POST" class="p-6">
-                    <h3 class="text-lg font-medium text-white mb-4">Editar Categoria</h3>
-                    <input type="text" name="name" id="edit-cat-name" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white mb-4">
-                    <div class="flex justify-end space-x-3">
-                        <button type="button" onclick="closeEditModal('category')" class="px-4 py-2 text-slate-400 hover:text-white">Cancelar</button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Salvar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    
-    <div id="modal-edit-account" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeEditModal('account')"></div>
-            <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
-                <form id="form-edit-account" method="POST" class="p-6">
-                    <h3 class="text-lg font-medium text-white mb-4">Editar Conta</h3>
-                    <input type="text" name="name" id="edit-acc-name" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white mb-4">
-                    <div class="flex justify-end space-x-3">
-                        <button type="button" onclick="closeEditModal('account')" class="px-4 py-2 text-slate-400 hover:text-white">Cancelar</button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Salvar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-edit-card" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="closeEditModal('card')"></div>
-            <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
-                <form id="form-edit-card" method="POST" class="p-6 space-y-4">
-                    <h3 class="text-lg font-medium text-white mb-2">Editar Cartão</h3>
-                    <input type="text" name="name" id="edit-card-name" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
-                    <input type="number" step="0.01" name="limit" id="edit-card-limit" required class="currency-input w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Fechamento</label>
-                            <select name="closing_day" id="edit-card-closing" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-center">
-                                {% for i in range(1, 32) %}
-                                    <option value="{{ i }}">{{ i }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Vencimento</label>
-                            <select name="due_day" id="edit-card-due" required class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-center">
-                                {% for i in range(1, 32) %}
-                                    <option value="{{ i }}">{{ i }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="flex justify-end space-x-3 pt-2">
-                        <button type="button" onclick="closeEditModal('card')" class="px-4 py-2 text-slate-400 hover:text-white">Cancelar</button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Salvar</button>
                     </div>
                 </form>
             </div>

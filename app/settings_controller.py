@@ -132,6 +132,8 @@ def add_card():
     limit = float(request.form.get('limit'))
     closing = int(request.form.get('closing_day'))
     due = int(request.form.get('due_day'))
+    brand = request.form.get('brand') # Nova captura da bandeira
+    bank = request.form.get('bank')   # Nova captura do banco
     
     initial_invoice_val = request.form.get('initial_invoice_value')
     if not initial_invoice_val:
@@ -141,7 +143,7 @@ def add_card():
     
     new_card = CreditCard(
         user_id=current_user.id, name=name, limit_amount=limit,
-        closing_day=closing, due_day=due
+        closing_day=closing, due_day=due, brand=brand, bank=bank
     )
     db.session.add(new_card)
     db.session.flush() # Gera o ID
@@ -174,9 +176,11 @@ def edit_card(id):
     card.limit_amount = float(request.form.get('limit'))
     card.closing_day = int(request.form.get('closing_day'))
     card.due_day = int(request.form.get('due_day'))
+    card.brand = request.form.get('brand') # Atualiza a bandeira
+    card.bank = request.form.get('bank')   # Atualiza o banco
     
     db.session.commit()
-    flash('Cartão atualizada!', 'success')
+    flash('Cartão atualizado!', 'success')
     return redirect(url_for('settings.index', tab='cards'))
 
 @settings_bp.route('/settings/card/delete/<int:id>')
