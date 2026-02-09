@@ -7,7 +7,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # FIX: Escrevemos manualmente em minúsculo para evitar erro do Docker
+  IMAGE_NAME: aprendendolinux/financeiro
 
 jobs:
   build-and-push:
@@ -30,22 +31,15 @@ jobs:
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Extrair metadados (Tags Automáticas)
+      - name: Extrair metadados
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # Branch 'dev' -> tag 'dev-latest'
             type=raw,value=dev-latest,enable=${{ github.ref == 'refs/heads/dev' }}
-            
-            # Branch 'main' -> tag 'latest'
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            
-            # Tag de versão (ex: v1.0.1) -> tag 'v1.0.1'
             type=ref,event=tag
-            
-            # Histórico do commit (sha)
             type=sha,format=short
 
       - name: Build e Push
@@ -58,18 +52,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # --- WEBHOOKS DO PORTAINER ---
+      # --- WEBHOOKS (Com flag -k para ignorar erro de SSL se necessário) ---
 
       - name: Atualizar Portainer (Produção)
-        # Só roda se o push for na branch MAIN
         if: github.ref == 'refs/heads/main'
         run: |
-          echo "🚀 Branch Main detectada: Atualizando container de Produção..."
-          curl -X POST "${{ secrets.PORTAINER_WEBHOOK_PROD }}"
+          echo "🚀 Branch Main: Disparando webhook..."
+          curl -k -X POST "${{ secrets.PORTAINER_WEBHOOK_PROD }}"
           
       - name: Atualizar Portainer (Dev)
-        # Só roda se o push for na branch DEV
         if: github.ref == 'refs/heads/dev'
         run: |
-          echo "🧪 Branch Dev detectada: Atualizando container de Desenvolvimento..."
-          curl -X POST "${{ secrets.PORTAINER_WEBHOOK_DEV }}"
+          echo "🧪 Branch Dev: Disparando webhook..."
+          curl -k -X POST "${{ secrets.PORTAINER_WEBHOOK_DEV }}"
