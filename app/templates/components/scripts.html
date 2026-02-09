@@ -8,33 +8,25 @@
         if (items.length === 0) return;
 
         let activeIndex = -1;
-        
-        // Procura o item que está visível (opacity-100)
         items.forEach((item, index) => {
             if (item.classList.contains('opacity-100')) {
                 activeIndex = index;
             }
         });
-
-        // Fallback de segurança
         if (activeIndex === -1) activeIndex = 0;
 
-        // Calcula novo índice (Circular)
         let newIndex = activeIndex + direction;
         if (newIndex < 0) newIndex = items.length - 1;
         if (newIndex >= items.length) newIndex = 0;
 
-        // 1. Oculta o atual
         const currentItem = items[activeIndex];
         currentItem.classList.remove('opacity-100', 'z-10');
         currentItem.classList.add('opacity-0', 'pointer-events-none');
 
-        // 2. Mostra o novo
         const newItem = items[newIndex];
         newItem.classList.remove('opacity-0', 'pointer-events-none');
         newItem.classList.add('opacity-100', 'z-10');
 
-        // 3. Atualiza Contador
         const counterEl = document.getElementById(`${type}-counter`);
         if(counterEl) counterEl.innerText = newIndex + 1;
     }
@@ -59,11 +51,8 @@
         const btnConfirm = document.getElementById('btn-confirm-delete');
         const msgElement = document.getElementById('delete-modal-message');
         btnConfirm.href = url;
-        if (message) {
-            msgElement.innerText = message;
-        } else {
-            msgElement.innerText = "Tem certeza que deseja excluir?";
-        }
+        if (message) msgElement.innerText = message;
+        else msgElement.innerText = "Tem certeza que deseja excluir?";
         openModal('generic-delete');
     }
 
@@ -74,13 +63,11 @@
         const icon = document.getElementById('notif-icon');
         const btn = document.getElementById('notif-btn');
 
-        // Resetar classes
         iconBg.className = "mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10 transition-colors duration-300";
         icon.className = "fas text-lg";
         btn.className = "w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none sm:ml-3 sm:w-auto sm:text-sm hover:opacity-90";
 
         let title = 'Notificação';
-
         if (category === 'success') {
             title = 'Sucesso!';
             iconBg.classList.add('bg-emerald-900/50', 'border', 'border-emerald-500/30');
@@ -102,7 +89,6 @@
             icon.classList.add('fa-info', 'text-blue-500');
             btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
         }
-
         titleEl.innerText = title;
         msgEl.innerText = message;
         openModal('notification');
@@ -132,12 +118,8 @@
         rows.sort((a, b) => {
             const timeA = parseFloat(a.getAttribute("data-timestamp")) || 0;
             const timeB = parseFloat(b.getAttribute("data-timestamp")) || 0;
-
-            if (sortAscending) {
-                return timeA - timeB;
-            } else {
-                return timeB - timeA;
-            }
+            if (sortAscending) return timeA - timeB;
+            else return timeB - timeA;
         });
 
         tbody.innerHTML = "";
@@ -147,9 +129,8 @@
     function toggleDateLimit(cb, inputId) {
         const input = document.getElementById(inputId);
         if (!input) return;
-        if (cb.checked) {
-            input.removeAttribute('max');
-        } else {
+        if (cb.checked) input.removeAttribute('max');
+        else {
             const today = new Date().toISOString().split('T')[0];
             input.setAttribute('max', today);
         }
@@ -163,7 +144,6 @@
         const input = document.getElementById(fieldId);
         const icon = iconId ? document.getElementById(iconId) : document.getElementById('icon-' + fieldId);
         if (!input) return;
-
         if (input.type === "password") {
             input.type = "text";
             if (icon) {
@@ -183,7 +163,6 @@
     function checkPassword() {
         const pwdInput = document.getElementById('password');
         if (!pwdInput) return;
-
         const pwd = pwdInput.value;
         const reqs = {
             length: pwd.length >= 6,
@@ -191,7 +170,6 @@
             number: /\d/.test(pwd),
             symbol: /[\W_]/.test(pwd)
         };
-
         updateReq('req-length', reqs.length);
         updateReq('req-upper', reqs.upper);
         updateReq('req-number', reqs.number);
@@ -201,7 +179,6 @@
     function updateReq(id, valid) {
         const el = document.getElementById(id);
         if (!el) return;
-
         const icon = el.querySelector('i');
         if (valid) {
             el.classList.remove('text-slate-500');
@@ -224,11 +201,8 @@
         const expenseOptions = document.getElementById('expense-options');
         const radioType = document.querySelector('input[name="type"]:checked');
         if (!expenseOptions || !radioType) return;
-        if (radioType.value === 'receita') {
-            expenseOptions.classList.add('hidden');
-        } else {
-            expenseOptions.classList.remove('hidden');
-        }
+        if (radioType.value === 'receita') expenseOptions.classList.add('hidden');
+        else expenseOptions.classList.remove('hidden');
     }
 
     function openPayCardModal(id, name, amount) {
@@ -239,22 +213,17 @@
     }
 
     let loadedGroups = [];
-
     async function openAdvanceModal(id, name) {
         document.getElementById('advance-card-id').value = id;
         document.getElementById('advance-card-name').innerText = name;
-        
         const listDiv = document.getElementById('advance-list');
         const totalLabel = document.getElementById('advance-total');
         const submitBtn = document.querySelector('#modal-advance button[type="submit"]');
-        
         listDiv.innerHTML = '<p class="text-center text-slate-500 text-xs py-4"><i class="fas fa-spinner fa-spin"></i> Buscando faturas...</p>';
         totalLabel.innerText = 'R$ 0,00';
         submitBtn.disabled = true;
         submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-
         openModal('advance');
-
         try {
             const response = await fetch(`/api/card/${id}/installments`);
             if (!response.ok) throw new Error('Falha na requisição');
@@ -273,12 +242,10 @@
         submitBtn.disabled = true;
         submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
         document.getElementById('advance-total').innerText = 'Selecione uma compra';
-
         if (loadedGroups.length === 0) {
             listDiv.innerHTML = '<p class="text-center text-slate-500 text-xs py-4">Nenhuma parcela futura encontrada.</p>';
             return;
         }
-
         loadedGroups.forEach((group, index) => {
             const row = document.createElement('div');
             row.className = 'flex items-center justify-between p-3 mb-2 bg-slate-800 hover:bg-slate-700 rounded-lg cursor-pointer border border-slate-700 hover:border-sky-500 transition group';
@@ -306,7 +273,6 @@
         submitBtn.disabled = false;
         submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         document.getElementById('advance-total').innerText = 'R$ 0,00';
-
         const header = document.createElement('div');
         header.className = 'flex items-center mb-3 pb-2 border-b border-slate-700';
         header.innerHTML = `
@@ -316,12 +282,10 @@
             <span class="text-sky-400 font-bold text-sm truncate flex-1 text-right">${group.description}</span>
         `;
         listDiv.appendChild(header);
-
         group.items.forEach(item => {
             const row = document.createElement('div');
             row.className = 'flex items-center justify-between p-2 hover:bg-slate-800 rounded cursor-pointer border border-transparent hover:border-slate-600 transition';
             const valFmt = item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            
             row.onclick = (e) => {
                 if(e.target.type !== 'checkbox') {
                     const cb = row.querySelector('input');
@@ -329,7 +293,6 @@
                     cb.dispatchEvent(new Event('change'));
                 }
             };
-
             row.innerHTML = `
                 <div class="flex items-center space-x-3">
                     <input type="checkbox" name="installments[]" value="${item.id}" class="w-4 h-4 text-sky-600 rounded focus:ring-sky-500 bg-slate-700 border-gray-600 advance-cb" data-amount="${item.amount}">
@@ -342,7 +305,6 @@
             `;
             listDiv.appendChild(row);
         });
-
         document.querySelectorAll('.advance-cb').forEach(cb => {
             cb.addEventListener('change', updateTotalAdvance);
         });
@@ -362,7 +324,6 @@
         const containerCredit = document.getElementById('container-credit');
         const fieldAccount = document.getElementById('field-account');
         const fieldCard = document.getElementById('field-card');
-
         if (mode === 'account') {
             containerAccount.classList.remove('hidden');
             containerCredit.classList.add('hidden');
@@ -379,28 +340,19 @@
     function openTab(tabName) {
         let contents = document.querySelectorAll('.tab-content');
         contents.forEach(div => div.classList.add('hidden'));
-        
         let btns = document.querySelectorAll('.tab-btn');
         btns.forEach(btn => {
             btn.classList.remove('border-emerald-500', 'text-emerald-400', 'border-red-400', 'text-red-400', 'text-red-300');
-            if(btn.id === 'tab-account') {
-                btn.classList.add('border-transparent', 'text-red-400'); 
-            } else {
-                btn.classList.add('border-transparent', 'text-slate-400');
-            }
+            if(btn.id === 'tab-account') btn.classList.add('border-transparent', 'text-red-400'); 
+            else btn.classList.add('border-transparent', 'text-slate-400');
         });
-
         const target = document.getElementById('content-' + tabName);
         if (target) target.classList.remove('hidden');
-        
         let activeBtn = document.getElementById('tab-' + tabName);
         if(activeBtn) {
             activeBtn.classList.remove('border-transparent', 'text-slate-400', 'text-red-400');
-            if(tabName === 'account') {
-                activeBtn.classList.add('border-red-400', 'text-red-300');
-            } else {
-                activeBtn.classList.add('border-emerald-500', 'text-emerald-400');
-            }
+            if(tabName === 'account') activeBtn.classList.add('border-red-400', 'text-red-300');
+            else activeBtn.classList.add('border-emerald-500', 'text-emerald-400');
         }
     }
 
@@ -432,9 +384,7 @@
             selectAccount = document.getElementById('edit-fix-acc');
             selectCard = document.getElementById('edit-fix-card');
         }
-
         if (!radioAccount || !divAccount || !divCredit) return;
-
         if (radioAccount.checked) {
             divAccount.classList.remove('hidden');
             divCredit.classList.add('hidden');
@@ -466,17 +416,10 @@
         document.getElementById('edit-card-limit').value = limit;
         document.getElementById('edit-card-closing').value = closing;
         document.getElementById('edit-card-due').value = due;
-        
         const bankSelect = document.getElementById('edit-card-bank');
-        if (bankSelect) {
-            bankSelect.value = bank || 'other';
-        }
-
+        if (bankSelect) bankSelect.value = bank || 'other';
         const brandSelect = document.getElementById('edit-card-brand');
-        if (brandSelect) {
-            brandSelect.value = brand || 'other';
-        }
-        
+        if (brandSelect) brandSelect.value = brand || 'other';
         openModal('edit-card');
     }
 
@@ -487,21 +430,15 @@
         document.getElementById('edit-fix-amount').value = d.amount;
         document.getElementById('edit-fix-day').value = d.day;
         document.getElementById('edit-fix-cat').value = d.cat;
-        
         document.getElementById('btn-delete-fixed-modal').href = "/settings/fixed/delete/" + d.id;
-
         if (d.method === 'credit') {
             const radioCredit = document.getElementById('edit-method-credit');
-            const radioAccount = document.getElementById('edit-method-account');
             if(radioCredit) radioCredit.checked = true;
-            if(radioAccount) radioAccount.checked = false;
             const cardSelect = document.getElementById('edit-fix-card');
             if(cardSelect) cardSelect.value = d.card;
         } else {
             const radioAccount = document.getElementById('edit-method-account');
-            const radioCredit = document.getElementById('edit-method-credit');
             if(radioAccount) radioAccount.checked = true;
-            if(radioCredit) radioCredit.checked = false;
             const accSelect = document.getElementById('edit-fix-acc');
             if(accSelect) accSelect.value = d.acc;
         }
@@ -517,7 +454,6 @@
         document.getElementById('edit-rev-day').value = d.day;
         document.getElementById('edit-rev-cat').value = d.cat;
         document.getElementById('edit-rev-acc').value = d.acc;
-        
         document.getElementById('btn-delete-revenue-modal').href = "/settings/revenue/delete/" + d.id;
         openModal('edit-revenue');
     }
@@ -539,38 +475,28 @@
             input.addEventListener('input', function() {
                 if (this.value.indexOf('.') !== -1) {
                     const parts = this.value.split('.');
-                    if (parts[1].length > 2) {
-                        this.value = parseFloat(this.value).toFixed(2);
-                    }
+                    if (parts[1].length > 2) this.value = parseFloat(this.value).toFixed(2);
                 }
             });
             input.addEventListener('blur', function() {
-                if (this.value && !isNaN(this.value)) {
-                    this.value = parseFloat(this.value).toFixed(2);
-                }
+                if (this.value && !isNaN(this.value)) this.value = parseFloat(this.value).toFixed(2);
             });
         });
     }
 
     let currentDangerAction = null;
-
     function openDangerConfirm(action) {
         const formId = action === 'reset' ? 'form-reset' : 'form-delete';
         const form = document.getElementById(formId);
         const passwordInput = form.querySelector('input[name="password"]');
-
         if (!passwordInput.value) {
             passwordInput.classList.add('ring-2', 'ring-red-500');
             setTimeout(() => passwordInput.classList.remove('ring-2', 'ring-red-500'), 1000);
             passwordInput.focus();
             return;
         }
-
-        if (action === 'reset') {
-            closeModal('reset-data');
-        } else {
-            closeModal('delete-account');
-        }
+        if (action === 'reset') closeModal('reset-data');
+        else closeModal('delete-account');
 
         currentDangerAction = action;
         const titleEl = document.getElementById('danger-title');
@@ -592,7 +518,6 @@
             iconBg.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-900/50 sm:mx-0 sm:h-10 sm:w-10';
             icon.className = 'fas fa-skull text-red-500 text-lg';
         }
-
         openModal('danger-confirm');
     }
 
@@ -603,12 +528,11 @@
     }
 
     // ==========================================
-    // 3. LÓGICA DE 2FA (ATUALIZADO)
+    // 3. LÓGICA DE 2FA
     // ==========================================
 
     function start2FASetup(method) {
         closeModal('setup-2fa-choice');
-        
         const formData = new FormData();
         formData.append('method', method);
         
@@ -622,7 +546,6 @@
                 openNotificationModal('danger', 'Erro ao configurar 2FA: ' + (data.message || 'Erro desconhecido'));
                 return;
             }
-
             const qrContainer = document.getElementById('qr-container');
             const qrImage = document.getElementById('qr-image');
             const secretDisplay = document.getElementById('secret-key-display');
@@ -634,13 +557,12 @@
             if (data.method === 'app') {
                 qrContainer.classList.remove('hidden');
                 qrImage.src = data.qr_code;
-                secretDisplay.innerText = data.secret; // Mostra a chave
+                secretDisplay.innerText = data.secret;
                 instruction.innerText = "Escaneie o QR Code ou digite a chave acima no seu app autenticador.";
             } else {
                 qrContainer.classList.add('hidden');
                 instruction.innerHTML = "Enviamos um código de verificação para o seu <strong>e-mail cadastrado</strong>.<br>Insira-o abaixo para confirmar e ativar a segurança.";
             }
-            
             openModal('setup-2fa-confirm');
         })
         .catch(error => {
@@ -652,7 +574,6 @@
     function copySecret() {
         const secretText = document.getElementById('secret-key-display').innerText;
         navigator.clipboard.writeText(secretText).then(() => {
-            // Feedback visual simples
             const btn = document.querySelector('#secret-key-display + button');
             const originalIcon = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-check text-emerald-400"></i>';
@@ -662,13 +583,73 @@
         });
     }
 
+    // ==========================================
+    // 4. INICIALIZAÇÃO (DOM Content Loaded)
+    // ==========================================
+    
     document.addEventListener('DOMContentLoaded', () => {
+        
+        // ---------------------------------------------------------
+        // A. LÓGICA DO MODAL DE BOAS-VINDAS (ONBOARDING)
+        // ---------------------------------------------------------
+        const welcomeSeen = {% if current_user.is_authenticated %}{{ 'true' if current_user.welcome_seen else 'false' }}{% else %}true{% endif %};
+        
+        if (!welcomeSeen) {
+            const modal = document.getElementById('modal-welcome');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        const checkTerms = document.getElementById('check-welcome-terms');
+        const btnConfirm = document.getElementById('btn-welcome-confirm');
+
+        if (checkTerms && btnConfirm) {
+            checkTerms.addEventListener('change', function() {
+                if (this.checked) {
+                    btnConfirm.disabled = false;
+                    btnConfirm.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed', 'disabled:bg-slate-600');
+                } else {
+                    btnConfirm.disabled = true;
+                    btnConfirm.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed', 'disabled:bg-slate-600');
+                }
+            });
+
+            btnConfirm.addEventListener('click', function() {
+                const originalText = btnConfirm.innerText;
+                btnConfirm.innerText = 'Salvando...';
+                btnConfirm.disabled = true;
+
+                fetch('/api/mark-welcome-seen', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // FORÇA O REDIRECIONAMENTO CORRETO
+                        window.location.href = "{{ url_for('settings.index') }}";
+                    } else {
+                        alert('Erro ao salvar. Tente novamente.');
+                        btnConfirm.innerText = originalText;
+                        btnConfirm.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro de conexão.');
+                    btnConfirm.innerText = originalText;
+                    btnConfirm.disabled = false;
+                });
+            });
+        }
+        
+        // ---------------------------------------------------------
+        // B. LÓGICA EXISTENTE DE INICIALIZAÇÃO
+        // ---------------------------------------------------------
+
         applyCurrencyMask();
         
         const activeTab = '{{ active_tab|default("") }}';
-        if(activeTab && typeof openTab === 'function') {
-            openTab(activeTab);
-        }
+        if(activeTab && typeof openTab === 'function') openTab(activeTab);
 
         const avatarInput = document.getElementById('avatarInput');
         const avatarPreviewImg = document.getElementById('avatar-preview-img');
@@ -694,22 +675,18 @@
         if(btnConfirmAvatar) {
             btnConfirmAvatar.addEventListener('click', function() {
                 if (!selectedFile) return;
-                
                 const originalText = btnConfirmAvatar.innerText;
                 btnConfirmAvatar.disabled = true;
                 btnConfirmAvatar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enviando...';
-                
                 const formData = new FormData();
                 formData.append('avatar', selectedFile);
-                
                 fetch("{{ url_for('settings.upload_avatar') }}", { 
                     method: 'POST', 
                     body: formData 
                 })
                 .then(response => {
-                    if (response.ok) { 
-                        window.location.reload(); 
-                    } else { 
+                    if (response.ok) window.location.reload(); 
+                    else { 
                         alert('Erro ao enviar a imagem. Tente novamente.'); 
                         btnConfirmAvatar.disabled = false; 
                         btnConfirmAvatar.innerHTML = originalText;
@@ -762,7 +739,13 @@
                 const firstMsg = messages[0];
                 const category = firstMsg.getAttribute('data-category');
                 const text = firstMsg.getAttribute('data-message');
-                openNotificationModal(category, text);
+                
+                // SÓ ABRE O 2FA SE O BOAS-VINDAS JÁ TIVER SIDO VISTO
+                if (category === 'setup_2fa') {
+                    if (welcomeSeen) openModal('setup-2fa-nudge');
+                } else {
+                    openNotificationModal(category, text);
+                }
             }
         }
     });

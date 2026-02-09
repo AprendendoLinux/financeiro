@@ -24,14 +24,18 @@ class User(UserMixin, db.Model):
     token_expiration = db.Column(db.DateTime, nullable=True)
     pending_email = db.Column(db.String(150), nullable=True)
 
+    # Controle de Onboarding (Esta era a coluna que faltava)
+    welcome_seen = db.Column(db.Boolean, default=False)
+
     # NOVAS COLUNAS 2FA
     two_factor_secret = db.Column(db.String(32), nullable=True)
     two_factor_method = db.Column(db.String(10), nullable=True) # 'app' ou 'email'
+    backup_codes = db.Column(db.Text, nullable=True)
 
     # Relacionamentos
-    categories = db.relationship('Category', backref='user', lazy=True)
-    accounts = db.relationship('BankAccount', backref='user', lazy=True)
-    cards = db.relationship('CreditCard', backref='user', lazy=True)
+    categories = db.relationship('Category', backref='user', lazy=True, cascade="all, delete-orphan")
+    accounts = db.relationship('BankAccount', backref='user', lazy=True, cascade="all, delete-orphan")
+    cards = db.relationship('CreditCard', backref='user', lazy=True, cascade="all, delete-orphan")
     
     # Transações e Fixos
     transactions = db.relationship('Transaction', backref='user', lazy=True)
@@ -77,8 +81,6 @@ class CreditCard(db.Model):
     closing_day = db.Column(db.Integer, nullable=False)
     due_day = db.Column(db.Integer, nullable=False)
     
-    # Brand = Bandeira (Visa, Master) -> Define o Ícone
-    # Bank = Banco (Nubank, Itaú) -> Define a Cor
     brand = db.Column(db.String(50), default='other') 
     bank = db.Column(db.String(50), default='other')
 
@@ -91,7 +93,8 @@ class FixedExpense(db.Model):
     day_of_month = db.Column(db.Integer, nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     account_id = db.Column(db.Integer, db.ForeignKey('bank_accounts.id'))
-    card_id = db.Column(db.Integer, db.ForeignKey('credit_cards.id')) # Opcional
+    card_id = db.Column(db.Integer, db.ForeignKey('credit_cards.id')) 
+    
     category = db.relationship('Category')
     account = db.relationship('BankAccount')
     card = db.relationship('CreditCard')
@@ -105,6 +108,7 @@ class FixedRevenue(db.Model):
     day_of_month = db.Column(db.Integer, nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     account_id = db.Column(db.Integer, db.ForeignKey('bank_accounts.id'))
+    
     category = db.relationship('Category')
     account = db.relationship('BankAccount')
 

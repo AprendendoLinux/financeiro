@@ -109,6 +109,92 @@
     </div>
 </div>
 
+<div id="modal-welcome" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        
+        <div class="fixed inset-0 bg-slate-950 bg-opacity-90 transition-opacity" aria-hidden="true"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-2 border-blue-500/30">
+            <div class="bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-900/50 sm:mx-0 sm:h-10 sm:w-10 ring-1 ring-blue-500/50">
+                        <i class="fas fa-rocket text-blue-400"></i>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-bold text-white" id="modal-title">Bem-vindo ao Sistema!</h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-slate-300">
+                                Olá! Para garantir o controle total das suas finanças, é necessário realizar algumas configurações iniciais:
+                            </p>
+                            <div class="mt-3 bg-slate-900/50 rounded p-3 border border-slate-700">
+                                <ul class="text-sm text-slate-400 list-disc list-inside space-y-1">
+                                    <li>Cadastrar <strong class="text-slate-200">Contas Bancárias</strong></li>
+                                    <li>Cadastrar <strong class="text-slate-200">Cartões de Crédito</strong></li>
+                                    <li>Configurar categorias personalizadas</li>
+                                    <li>Ativar autenticação de dois fatores (2FA)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 border-t border-slate-700 pt-4">
+                    <div class="flex items-center justify-center">
+                        <label class="flex items-center space-x-3 cursor-pointer group">
+                            <input id="check-welcome-terms" type="checkbox" class="w-5 h-5 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-800 transition">
+                            <span class="text-sm text-slate-400 group-hover:text-white transition font-medium">Li e compreendi os passos necessários.</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-900/80 px-4 py-3 sm:px-6 flex flex-row-reverse border-t border-slate-700">
+                <button type="button" id="btn-welcome-confirm" disabled class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-bold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-600 transition-all">
+                    OK, Configurar Agora
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-setup-2fa-nudge" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        
+        <div class="fixed inset-0 bg-slate-950 bg-opacity-90 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-600">
+            <div class="bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <i class="fas fa-shield-alt text-blue-600 text-lg"></i>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-white" id="modal-title">Segurança da Conta</h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-slate-300">
+                                Recomendamos fortemente que você ative a <strong>Autenticação de Dois Fatores (2FA)</strong> para proteger sua conta contra acessos não autorizados.
+                            </p>
+                            <p class="text-sm text-slate-400 mt-2">
+                                Você pode configurar isso agora ou mais tarde no menu de Configurações > Conta.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <a href="{{ url_for('settings.index', tab='account') }}" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                    Ativar Agora
+                </a>
+                <button type="button" onclick="closeModal('setup-2fa-nudge')" class="mt-3 w-full inline-flex justify-center rounded-md border border-slate-600 shadow-sm px-4 py-2 bg-slate-800 text-base font-medium text-slate-300 hover:text-white hover:bg-slate-700 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Talvez Depois
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% include "components/all_modals.html" %}
 {% include "components/scripts.html" %}
 
