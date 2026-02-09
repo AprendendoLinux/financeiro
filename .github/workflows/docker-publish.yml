@@ -1,57 +1,62 @@
-name: Publicar (Dev) no GitHub Container Registry
+name: Build e Publish (Multi-Branch)
 
-# 1. Gatilho: Roda apenas quando há push na branch 'dev'
 on:
   push:
-    branches: [ "dev" ]
+    # 1. Roda em ambas as branches
+    branches: [ "main", "dev" ]
+    # 2. Roda também se você criar uma tag de versão (ex: v1.0.0)
+    tags: [ 'v*.*.*' ]
 
-# 2. Definição de Variáveis de Ambiente
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }} # Pega automaticamente "seu-usuario/nome-do-repo"
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    
-    # Permissões necessárias para subir imagens no GHCR
     permissions:
       contents: read
       packages: write
 
     steps:
-      - name: Baixar o código (Checkout)
+      - name: Baixar o código
         uses: actions/checkout@v4
 
-      - name: Login no GitHub Container Registry
+      - name: Login no GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }} # Token automático do GitHub (não precisa configurar nada!)
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Extrair metadados (Tags e Labels)
+      - name: Extrair metadados (Inteligência das Tags)
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          # Configura as tags automáticas:
-          # 1. dev-latest: para sempre apontar para a última versão de dev
-          # 2. sha-...: cria uma tag com o código do commit (ex: sha-a1b2c3d) para histórico
+          # AQUI ESTÁ A MÁGICA:
           tags: |
-            type=raw,value=dev-latest
+            # Regra 1: Se for branch 'dev', usa tag 'dev-latest'
+            type=raw,value=dev-latest,enable=${{ github.ref == 'refs/heads/dev' }}
+            
+            # Regra 2: Se for branch 'main', usa tag 'latest'
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            
+            # Regra 3: Se for uma tag do Git (v1.0), usa o nome da tag
+            type=ref,event=tag
+            
+            # Regra 4: Sempre gera o SHA curto para histórico
             type=sha,format=short
 
-      - name: Construir e Enviar (Build & Push)
+      - name: Construir e Enviar
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Otimização de Cache (para o build ser mais rápido)
           cache-from: type=gha
           cache-to: type=gha,mode=max
