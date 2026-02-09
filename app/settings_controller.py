@@ -402,14 +402,22 @@ def request_email_change():
     
     link = url_for('settings.confirm_email_change', token=token, _external=True)
     try:
+        # --- CÓDIGO NOVO ---
+        # 1. Gera o HTML bonito usando o template que criamos
+        html_content = render_template(
+            'email/change_email.html',
+            user=current_user,
+            confirm_url=link,
+            current_year=datetime.now().year
+        )
+
+        # 2. Envia o e-mail passando apenas o html_content
         send_email(
             to_email=new_email,
             subject="Confirme seu novo e-mail",
-            title="Alteração de E-mail",
-            body_content=f"Olá {current_user.name}. Recebemos uma solicitação para alterar seu e-mail de cadastro. Clique no botão abaixo para confirmar a mudança.",
-            action_url=link,
-            action_text="Confirmar Novo E-mail"
+            html_content=html_content
         )
+        
         flash(f'Link de confirmação enviado para {new_email}. Verifique sua caixa de entrada.', 'info')
     except Exception as e:
         print(f"Erro no envio de email: {e}")

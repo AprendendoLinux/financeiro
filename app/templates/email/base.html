@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject }}</title>
+    <style>
+        /* Reset básico para e-mails */
+        body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: #0f172a; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        table { border-spacing: 0; border-collapse: collapse; }
+        img { -ms-interpolation-mode: bicubic; border: 0; display: block; }
+        
+        /* Estilos do Container */
+        .email-container { max-width: 600px; margin: 0 auto; background-color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; }
+        .email-header { background-color: #0f172a; padding: 30px; text-align: center; border-bottom: 1px solid #334155; }
+        .email-body { padding: 40px 30px; color: #e2e8f0; font-size: 16px; line-height: 1.6; }
+        .email-footer { background-color: #0f172a; padding: 20px; text-align: center; color: #64748b; font-size: 12px; border-top: 1px solid #334155; }
+        
+        /* Botões */
+        .btn { display: inline-block; padding: 14px 30px; background-color: #2563eb; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); }
+        .btn:hover { background-color: #1d4ed8; }
+        
+        /* Logo (Simulado com texto/ícone se não tiver imagem) */
+        .logo-text { color: #3b82f6; font-size: 24px; font-weight: 800; letter-spacing: -1px; text-decoration: none; }
+        
+        /* Utilitários */
+        .text-center { text-align: center; }
+        .text-muted { color: #94a3b8; }
+        .code-block { background-color: #0f172a; border: 1px dashed #3b82f6; color: #60a5fa; font-size: 32px; font-family: monospace; letter-spacing: 5px; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+            <td align="center" style="padding: 40px 0;">
+                
+                <table class="email-container" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                    
+                    <tr>
+                        <td class="email-header">
+                            <a href="#" class="logo-text">
+                                FINANCEIRO<span style="color:#ffffff;">APP</span>
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td class="email-body">
+                            {% block email_content %}{% endblock %}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td class="email-footer">
+                            <p>&copy; {{ current_year }} Sistema Financeiro. Todos os direitos reservados.</p>
+                            <p style="margin-top: 10px;">
+                                <a href="#" style="color: #64748b; text-decoration: underline;">Termos de Uso</a> | 
+                                <a href="#" style="color: #64748b; text-decoration: underline;">Privacidade</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

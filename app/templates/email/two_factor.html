@@ -1,0 +1,16 @@
+{% extends "email/base.html" %}
+
+{% block email_content %}
+    <h1 style="color: #ffffff; margin-top: 0; font-size: 24px; text-align: center;">Código de Verificação</h1>
+    
+    <p class="text-center">Use o código abaixo para completar seu acesso:</p>
+    
+    <div class="code-block">
+        {{ code }}
+    </div>
+    
+    <p class="text-center text-muted" style="font-size: 14px;">
+        Este código é válido por aproximadamente 1 hora.<br>
+        Nunca compartilhe este código com ninguém.
+    </p>
+{% endblock %}

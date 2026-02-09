@@ -1,0 +1,16 @@
+{% extends "email/base.html" %}
+
+{% block email_content %}
+    <h1 style="color: #ffffff; margin-top: 0; font-size: 24px;">Bem-vindo(a), {{ user.name }}!</h1>
+    
+    <p>Estamos muito felizes em ter você conosco. Para garantir a segurança da sua conta e começar a controlar suas finanças, por favor, confirme seu endereço de e-mail.</p>
+    
+    <div class="text-center">
+        <a href="{{ confirm_url }}" class="btn">Ativar Minha Conta</a>
+    </div>
+    
+    <p class="text-muted" style="margin-top: 30px; font-size: 14px;">
+        Se o botão acima não funcionar, copie e cole o link abaixo no seu navegador:<br>
+        <span style="word-break: break-all; color: #3b82f6;">{{ confirm_url }}</span>
+    </p>
+{% endblock %}

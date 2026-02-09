@@ -15,7 +15,7 @@ from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignat
 
 auth_bp = Blueprint('auth', __name__)
 
-# --- AUXILIARES ---
+# --- AUXILIARES (Mantidos iguais) ---
 def validate_password_complexity(password):
     if len(password) < 6: return False
     if not re.search(r'[A-Z]', password): return False
@@ -53,20 +53,18 @@ def send_2fa_email(user, method=None):
     totp = get_totp_object(user, method)
     code = totp.now()
     
-    html_body = f"""
-    <div style="text-align: center; padding: 20px;">
-        <p style="color: #64748b; font-size: 16px;">Seu código de verificação é:</p>
-        <h1 style="color: #2563eb; font-size: 48px; letter-spacing: 5px; margin: 20px 0; font-family: monospace;">{code}</h1>
-        <p style="color: #94a3b8; font-size: 14px;">Este código é válido por aproximadamente 1 hora.</p>
-    </div>
-    """
+    # Renderiza o template bonito do 2FA
+    html_content = render_template(
+        'email/two_factor.html',
+        user=user,
+        code=code,
+        current_year=datetime.now().year
+    )
     
-    # Envia sem action_url para não gerar botão extra
     send_email(
         to_email=user.email,
         subject="Seu Código de Acesso",
-        title="Verificação de Segurança",
-        body_content=html_body
+        html_content=html_content
     )
 
 def set_trusted_cookie(response, user_id):
@@ -140,40 +138,37 @@ def register():
         logout_user()
         
     if request.method == 'POST':
-        # CORREÇÃO: Captura os campos separadamente conforme o HTML
         name = request.form.get('name')
         last_name = request.form.get('last_name')
         email = request.form.get('email')
-        birth_date_str = request.form.get('birth_date') # Captura data do form
+        birth_date_str = request.form.get('birth_date')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
         
-        # Tratamento da Data de Nascimento
         birth_date = None
         if birth_date_str:
             try:
                 birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
             except ValueError:
-                pass # Se der erro, salva como None
+                pass
 
         if password != confirm_password:
             flash('As senhas não conferem.', 'warning')
             return redirect(url_for('auth.register'))
             
         if not validate_password_complexity(password):
-            flash('A senha deve ter no mínimo 6 caracteres, conter letras maiúsculas, números e símbolos.', 'warning')
+            flash('A senha deve ter no mínimo 6 caracteres...', 'warning')
             return redirect(url_for('auth.register'))
             
         if User.query.filter_by(email=email).first():
             flash('Este e-mail já está cadastrado.', 'danger')
             return redirect(url_for('auth.register'))
             
-        # Cria usuário com os dados corretos
         new_user = User(
             name=name,
             last_name=last_name,
             email=email,
-            birth_date=birth_date, # Salva a data de nascimento
+            birth_date=birth_date,
             is_verified=False,
             welcome_seen=False
         )
@@ -187,42 +182,37 @@ def register():
         default_account = BankAccount(user_id=new_user.id, name='Carteira de dinheiro', current_balance=0.0)
         db.session.add(default_account)
         
+        # Categorias Padrão (Resumido para economizar espaço visual, mas mantenha as suas)
         default_cats = [
             ('Salário', 'receita', '#10b981'), ('Investimentos', 'receita', '#10b981'), 
-            ('Extras', 'receita', '#10b981'),
-            ('Moradia', 'despesa', '#ef4444'), ('Alimentação', 'despesa', '#ef4444'), 
-            ('Transporte', 'despesa', '#ef4444'), ('Saúde', 'despesa', '#ef4444'),
-            ('Educação', 'despesa', '#ef4444'), ('Lazer', 'despesa', '#ef4444'),
-            ('Compras', 'despesa', '#ef4444'),
-            ('Transferência', 'transferencia', '#3B82F6'),
-            ('Pagamento', 'pagamento', '#EF4444')
+            ('Extras', 'receita', '#10b981'), ('Moradia', 'despesa', '#ef4444'), 
+            ('Alimentação', 'despesa', '#ef4444'), ('Transporte', 'despesa', '#ef4444'), 
+            ('Saúde', 'despesa', '#ef4444'), ('Educação', 'despesa', '#ef4444'), 
+            ('Lazer', 'despesa', '#ef4444'), ('Compras', 'despesa', '#ef4444'),
+            ('Transferência', 'transferencia', '#3B82F6'), ('Pagamento', 'pagamento', '#EF4444')
         ]
         for cn, ct, cc in default_cats:
             db.session.add(Category(user_id=new_user.id, name=cn, type=ct, color_hex=cc))
             
         db.session.commit()
         
-        # Envio de E-mail
+        # --- Envio de E-mail BONITO ---
         token = generate_confirmation_token(new_user.email)
         confirm_url = url_for('auth.confirm_email', token=token, _external=True)
         
-        html = f"""
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <p>Olá <strong>{name}</strong>,</p>
-            <p>Bem-vindo! Por favor, clique no botão abaixo para ativar sua conta e começar:</p>
-            <div style="text-align: center; margin: 35px 0;">
-                <a href="{confirm_url}" style="background-color: #2563eb; color: white; padding: 18px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; display: inline-block; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);">Ativar Minha Conta</a>
-            </div>
-            <p style="font-size: 12px; color: #666;">Se o botão não funcionar, copie este link: {confirm_url}</p>
-        </div>
-        """
+        # Renderiza o template de ativação
+        html_content = render_template(
+            'email/activate.html',
+            user=new_user,
+            confirm_url=confirm_url,
+            current_year=datetime.now().year
+        )
 
         try:
             send_email(
                 to_email=new_user.email,
-                subject="Confirme sua conta",
-                title="Bem-vindo!",
-                body_content=html
+                subject="Bem-vindo! Confirme sua conta",
+                html_content=html_content
             )
             flash('Cadastro realizado! Verifique seu e-mail para ativar a conta.', 'info')
         except Exception as e:
@@ -234,6 +224,7 @@ def register():
         
     return render_template('register.html')
 
+# (Manter rota /confirm/<token> igual)
 @auth_bp.route('/confirm/<token>')
 def confirm_email(token):
     logout_user()
@@ -249,12 +240,15 @@ def confirm_email(token):
         flash('Conta já confirmada. Faça login.', 'success')
     else:
         user.is_verified = True
-        user.welcome_seen = False # Garante modal de boas-vindas
+        user.welcome_seen = False
         db.session.add(user)
         db.session.commit()
         flash('Sua conta foi confirmada! Você já pode fazer login.', 'success')
         
     return redirect(url_for('auth.login'))
+
+# (Manter rotas de 2FA e Login/Logout iguais)
+# ...
 
 @auth_bp.route('/login/2fa', methods=['GET', 'POST'])
 def verify_2fa_login():
@@ -313,15 +307,32 @@ def forgot_password():
             user.auth_token = token
             user.token_expiration = datetime.utcnow() + timedelta(hours=1)
             db.session.commit()
+            
             link = f"{get_base_url()}/reset-password/{token}"
+            
+            # Renderiza template de recuperação
+            html_content = render_template(
+                'email/reset_password.html',
+                user=user,
+                action_url=link,
+                current_year=datetime.now().year
+            )
+
             try:
-                send_email(to_email=user.email, subject="Recuperação de Senha", title="Recuperar Senha", body_content=f"Olá {user.name}. Clique no botão abaixo para redefinir sua senha.", action_url=link, action_text="Redefinir Senha")
+                send_email(
+                    to_email=user.email,
+                    subject="Recuperação de Senha",
+                    html_content=html_content
+                )
             except Exception as e:
                 print(f"Erro email: {e}")
+                
         flash('Se o e-mail existir, as instruções foram enviadas.', 'info')
         return redirect(url_for('auth.login'))
     return render_template('forgot_password.html')
 
+# (Manter o restante do arquivo igual: reset-password, settings/2fa/*, api/mark-welcome-seen)
+# ...
 @auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     user = User.query.filter_by(auth_token=token).first()
@@ -414,7 +425,6 @@ def logout():
 @login_required
 def mark_welcome_seen():
     try:
-        # CORREÇÃO 2: Busca explícita para garantir atualização
         user = User.query.get(current_user.id)
         user.welcome_seen = True
         db.session.commit()

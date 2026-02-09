@@ -1,0 +1,16 @@
+{% extends "email/base.html" %}
+
+{% block email_content %}
+    <h1 style="color: #ffffff; margin-top: 0; font-size: 24px;">Confirmação de Troca de E-mail</h1>
+    
+    <p>Olá, {{ user.name }}.</p>
+    <p>Recebemos uma solicitação para alterar o e-mail da sua conta para este endereço.</p>
+    
+    <div class="text-center">
+        <a href="{{ confirm_url }}" class="btn">Confirmar Novo E-mail</a>
+    </div>
+    
+    <p class="text-muted" style="margin-top: 30px; font-size: 14px;">
+        Se você não solicitou essa alteração, ignore este e-mail.
+    </p>
+{% endblock %}
