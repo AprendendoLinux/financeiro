@@ -1,4 +1,5 @@
 #!/bin/bash
+# Script de Deploy Automático
 
 # Cores para feedback visual
 GREEN='\033[0;32m'
