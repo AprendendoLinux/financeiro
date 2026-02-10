@@ -1,4 +1,5 @@
 # docker-compose.yml
+## Pronto para deployment em produção, com configuração de rede personalizada e variáveis de ambiente seguras.
 networks:
   financeiro-network:
     driver: bridge
