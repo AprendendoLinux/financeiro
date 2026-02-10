@@ -10,6 +10,12 @@
             </div>
             <h2 class="text-2xl font-bold text-white">Controle Financeiro</h2>
             <p class="text-slate-400 text-sm mt-1">Gerencie suas finanças com facilidade.</p>
+
+            <div class="mt-3 group cursor-default inline-block" title="Versão do Sistema">
+                <span class="font-mono text-[10px] bg-slate-800 px-2 py-1 rounded text-emerald-600/70 group-hover:text-emerald-500 transition-colors border border-slate-700/50">
+                    {{ app_version }}
+                </span>
+            </div>
         </div>
 
         <form action="{{ url_for('auth.login') }}" method="POST" class="p-8 space-y-6">
@@ -54,7 +60,6 @@
         </div>
     </div>
 </div>
-
 
 {% include "components/scripts.html" %}
 {% endblock %}

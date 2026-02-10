@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, current_user
 from .config import Config 
+import os
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -24,6 +25,12 @@ def create_app(config_class=Config):
 
     # Importação dos Models
     from . import models 
+
+    @app.context_processor
+    def inject_version():
+        # Pega a versão do Docker ou usa 'dev-local' se não tiver
+        version = os.environ.get('APP_VERSION', 'dev-local')
+        return dict(app_version=version)
 
     @login_manager.user_loader
     def load_user(user_id):
