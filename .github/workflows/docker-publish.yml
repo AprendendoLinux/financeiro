@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necessário para git describe funcionar com tags
 
       - name: Login no GitHub Container Registry
         uses: docker/login-action@v3
@@ -60,9 +62,9 @@ jobs:
             echo "Modo: DESENVOLVIMENTO (HASH)"
             
           else
-            # CENÁRIO 3: Main sem tag (Fallback) -> Usa 'latest-' + Hash
-            VERSION="latest-${SHORT_SHA}"
-            echo "Modo: MAIN (LATEST)"
+            # CENÁRIO 3: Main sem tag -> Usa a tag mais recente (ex: v1.0.5)
+            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            echo "Modo: MAIN (ULTIMA TAG)"
           fi
           
           echo "Versão Calculada: $VERSION"
