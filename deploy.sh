@@ -21,15 +21,20 @@ echo -e "${GREEN}1. Sincronizando branch Dev...${NC}"
 git checkout dev
 git pull origin dev
 
-# 3. Vai para Main, atualiza e faz o Merge
+# 3. Vai para Main, atualiza e faz o Merge AUTOMÁTICO
 echo -e "${GREEN}2. Atualizando Main e fazendo Merge da Dev...${NC}"
 git checkout main
 git pull origin main
 
-if ! git merge dev; then
+# --- MUDANÇA AQUI: Mensagem automática com data/hora ---
+DATA_HORA=$(date "+%d/%m/%Y às %H:%Mh")
+MENSAGEM="Merge branch 'dev' em $DATA_HORA"
+
+if ! git merge dev -m "$MENSAGEM"; then
     echo -e "${RED}ERRO: Conflito no merge. Resolva manualmente.${NC}"
     exit 1
 fi
+# -------------------------------------------------------
 
 # 4. CÁLCULO AUTOMÁTICO DA VERSÃO
 echo -e "${GREEN}3. Calculando próxima versão...${NC}"
@@ -67,17 +72,15 @@ fi
 read -p "Pressione [Enter] para confirmar o lançamento da $NEW_TAG..."
 
 # 5. Envia para o GitHub (Dispara o Actions)
-echo -e "${GREEN}4. Enviando atualizações para o GitHub...${NC}"
+echo -e "${GREEN}4. Enviando para o GitHub...${NC}"
 
-# A: Push na Main (Atualiza a imagem 'latest')
+# Cria a tag e faz o push de tudo
+git tag "$NEW_TAG"
 git push origin main
-
-# B: Cria e envia a Tag (Cria a imagem fixa 'v1.0.x')
-git tag -a "$NEW_TAG" -m "Release automática $NEW_TAG"
 git push origin "$NEW_TAG"
 
-# 6. Volta para a branch de trabalho
-echo -e "${GREEN}5. Voltando para Dev...${NC}"
+# 6. Volta para a dev para continuar trabalhando
+echo -e "${GREEN}5. Voltando para a Dev...${NC}"
 git checkout dev
 
-echo -e "${YELLOW}>>> SUCESSO! Deploy da versão $NEW_TAG iniciado.${NC}"
+echo -e "${YELLOW}>>> SUCESSO! O GitHub Actions já está trabalhando.${NC}"
