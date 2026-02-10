@@ -1,86 +1,101 @@
-#!/bin/bash
-# Script de Deploy Automático
+name: Deploy Automático (GHCR)
 
-# Cores para feedback visual
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+on:
+  push:
+    branches: [ "main", "dev" ]
+    tags: [ 'v*.*.*' ]
 
-echo -e "${YELLOW}>>> INICIANDO AUTO-DEPLOY (Dev -> Main -> GHCR)${NC}"
+env:
+  REGISTRY: ghcr.io
+  # NOME EM MINÚSCULO OBRIGATÓRIO (Evita erro do Docker)
+  IMAGE_NAME: aprendendolinux/financeiro
 
-# 1. Verifica se há arquivos não salvos (Segurança)
-if [[ $(git status --porcelain) ]]; then
-    echo -e "${RED}ERRO: Você tem alterações não salvas.${NC}"
-    echo "Faça commit ou stash na branch dev antes de rodar o deploy."
-    exit 1
-fi
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
-# 2. Garante que a branch Dev está sincronizada
-echo -e "${GREEN}1. Sincronizando branch Dev...${NC}"
-git checkout dev
-git pull origin dev
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necessário para git describe funcionar com tags
 
-# 3. Vai para Main, atualiza e faz o Merge AUTOMÁTICO
-echo -e "${GREEN}2. Atualizando Main e fazendo Merge da Dev...${NC}"
-git checkout main
-git pull origin main
+      - name: Login no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-# --- MUDANÇA AQUI: Mensagem automática com data/hora ---
-DATA_HORA=$(date "+%d/%m/%Y às %H:%Mh")
-MENSAGEM="Merge branch 'dev' em $DATA_HORA"
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-if ! git merge dev -m "$MENSAGEM"; then
-    echo -e "${RED}ERRO: Conflito no merge. Resolva manualmente.${NC}"
-    exit 1
-fi
-# -------------------------------------------------------
+      - name: Extrair metadados (Tags Docker)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=dev-latest,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
+            type=ref,event=tag
+            type=sha,format=short
 
-# 4. CÁLCULO AUTOMÁTICO DA VERSÃO
-echo -e "${GREEN}3. Calculando próxima versão...${NC}"
+      # --- CÁLCULO INTELIGENTE DA VERSÃO ---
+      - name: Definir Versão (Tag ou Hash)
+        id: prep
+        run: |
+          # Pega os 7 primeiros dígitos do Hash do commit
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            # CENÁRIO 1: É uma TAG (Produção) -> Usa o nome limpo (ex: v1.0.6)
+            VERSION=${GITHUB_REF#refs/tags/}
+            echo "Modo: TAG DE PRODUÇÃO"
+            
+          elif [[ $GITHUB_REF == refs/heads/dev ]]; then
+            # CENÁRIO 2: É a DEV -> Usa 'dev-' + Hash (ex: dev-a1b2c3d)
+            VERSION="dev-${SHORT_SHA}"
+            echo "Modo: DESENVOLVIMENTO (HASH)"
+            
+          else
+            # CENÁRIO 3: Main sem tag -> Usa a tag mais recente (ex: v1.0.5)
+            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            echo "Modo: MAIN (ULTIMA TAG)"
+          fi
+          
+          echo "Versão Calculada: $VERSION"
+          # Salva na variável de saída para o próximo passo usar
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
-# Busca todas as tags do repositório remoto para não errar a conta
-git fetch --tags
+      - name: Build e Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # --- INJETA A VERSÃO NO DOCKERFILE ---
+          build-args: |
+            APP_VERSION=${{ steps.prep.outputs.VERSION }}
 
-# Pega a última tag que segue o padrão v*.*.* (ex: v1.0.5)
-LAST_TAG=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n 1)
+      # --- WEBHOOKS DO PORTAINER ---
 
-if [ -z "$LAST_TAG" ]; then
-    # Se não existir nenhuma tag, começa na v1.0.0
-    NEW_TAG="v1.0.0"
-    echo -e "Nenhuma tag encontrada. Iniciando versão: ${YELLOW}$NEW_TAG${NC}"
-else
-    # Remove o 'v' inicial para fazer a conta (ex: 1.0.5)
-    VERSION=${LAST_TAG#v}
-    
-    # Quebra em partes pelo ponto (Major.Minor.Patch)
-    IFS='.' read -r -a parts <<< "$VERSION"
-    MAJOR=${parts[0]}
-    MINOR=${parts[1]}
-    PATCH=${parts[2]}
-    
-    # Soma 1 no Patch (último número)
-    NEW_PATCH=$((PATCH + 1))
-    
-    # Monta a nova tag
-    NEW_TAG="v$MAJOR.$MINOR.$NEW_PATCH"
-    echo -e "Versão Anterior: $LAST_TAG"
-    echo -e "NOVA VERSÃO:     ${YELLOW}$NEW_TAG${NC}"
-fi
-
-# Pausa rápida para você conferir (opcional, pode remover o read se quiser 100% direto)
-read -p "Pressione [Enter] para confirmar o lançamento da $NEW_TAG..."
-
-# 5. Envia para o GitHub (Dispara o Actions)
-echo -e "${GREEN}4. Enviando para o GitHub...${NC}"
-
-# Cria a tag e faz o push de tudo
-git tag "$NEW_TAG"
-git push origin main
-git push origin "$NEW_TAG"
-
-# 6. Volta para a dev para continuar trabalhando
-echo -e "${GREEN}5. Voltando para a Dev...${NC}"
-git checkout dev
-
-echo -e "${YELLOW}>>> SUCESSO! O GitHub Actions já está trabalhando.${NC}"
+      - name: Atualizar Portainer (Produção)
+        # Só roda se o push for na branch MAIN
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "🚀 Branch Main: Disparando webhook de Produção..."
+          curl -k -X POST "${{ secrets.PORTAINER_WEBHOOK_PROD }}"
+          
+      - name: Atualizar Portainer (Dev)
+        # Só roda se o push for na branch DEV
+        if: github.ref == 'refs/heads/dev'
+        run: |
+          echo "🧪 Branch Dev: Disparando webhook de Desenvolvimento..."
+          curl -k -X POST "${{ secrets.PORTAINER_WEBHOOK_DEV }}"
