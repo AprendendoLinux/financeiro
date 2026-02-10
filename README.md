@@ -4,7 +4,7 @@ Um sistema robusto e intuitivo de gestão financeira pessoal desenvolvido com **
 
 ## 🚀 Funcionalidades Principais
 
-### 🔐 Gestão de Acessos e Segurança
+### 🔐 Gestão de Acessos e Segurança:
 
 * **Autenticação Completa:** Fluxo de login, registro e logout seguro utilizando `Flask-Login`.
 * **Verificação de E-mail:** Ativação de conta via link enviado por e-mail para garantir a validade dos usuários.
