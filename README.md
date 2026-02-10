@@ -125,4 +125,4 @@ Este projeto é desenvolvido para fins educacionais e de controle pessoal. Sinta
 
 ---
 
-**Desenvolvido por Henrique Fagundes**.
+**Desenvolvido por Henrique Fagundes - Todos os direitos reservados**.
