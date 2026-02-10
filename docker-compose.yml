@@ -1,6 +1,7 @@
 # docker-compose.yml
 ## Pronto para deployment em produção, com configuração de rede personalizada e variáveis de ambiente seguras.
 ## Certifique-se de substituir as senhas e chaves secretas por valores seguros antes de usar em produção.
+## Para desenvolvimento, use o comando: `docker-compose -f docker-compose.yml up --build`
 networks:
   financeiro-network:
     driver: bridge
