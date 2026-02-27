@@ -78,41 +78,6 @@ def dashboard():
         month = today.month
         year = today.year
 
-    # req_date = date(year, month, 1)
-    # if current_user.start_date:
-    #     start_month = current_user.start_date.replace(day=1)
-    #     if req_date < start_month:
-    #         return redirect(url_for('finance.dashboard', month=start_month.month, year=start_month.year))
-
-    # last_db_trans = Transaction.query.filter_by(user_id=current_user.id).order_by(Transaction.date.desc()).first()
-    # max_nav_date = last_db_trans.date if last_db_trans else today
-    # if max_nav_date < today: max_nav_date = today
-
-    # next_view_date = date(year, month, 1) + relativedelta(months=1)
-    # allow_next = True
-    # if next_view_date > max_nav_date.replace(day=1): allow_next = False
-
-    # all_fixed_expenses = FixedExpense.query.filter_by(user_id=current_user.id).order_by(FixedExpense.day_of_month).all()
-    # fixed_account_expenses = [f for f in all_fixed_expenses if not f.card_id]
-    # fixed_revenues_defs = FixedRevenue.query.filter_by(user_id=current_user.id).order_by(FixedRevenue.day_of_month).all()
-
-    # ref_pattern = f"%Ref: {month:02d}/{year}%"
-    
-    # transactions = Transaction.query.filter(
-    #     Transaction.user_id == current_user.id,
-    #     or_(
-    #         and_(
-    #             extract('month', Transaction.date) == month,
-    #             extract('year', Transaction.date) == year
-    #         ),
-    #         Transaction.description.like(ref_pattern)
-    #     ),
-    #     Transaction.type.in_(['receita', 'despesa', 'transf_saida', 'transf_entrada']) 
-    # ).order_by(Transaction.date.desc(), Transaction.created_at.desc()).all()
-
-    # paid_expense_ids = []
-    # received_revenue_ids = []
-
     req_date = date(year, month, 1)
     prev_month_date = req_date - relativedelta(months=1)
     

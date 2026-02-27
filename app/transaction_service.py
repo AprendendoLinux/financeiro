@@ -12,13 +12,6 @@ class TransactionService:
         last_day = calendar.monthrange(year, month)[1]
         return date(year, month, min(day, last_day))
 
-    # @staticmethod
-    # def calculate_card_date(purchase_date, card):
-    #     if purchase_date.day > card.closing_day:
-    #         next_month = purchase_date + relativedelta(months=1)
-    #         return date(next_month.year, next_month.month, 1)
-    #     return purchase_date
-
     @staticmethod
     def calculate_card_date(purchase_date, card):
         return purchase_date
