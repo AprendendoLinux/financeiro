@@ -25,7 +25,7 @@
             <tbody class="divide-y divide-slate-700" id="transactions-body">
                 {% for t in transactions %}
                 <tr class="hover:bg-slate-750 transition-colors duration-150 group {% if t.is_scheduled %}opacity-75{% endif %}" 
-                    data-timestamp="{{ t.date.strftime('%Y%m%d') }}{{ t.created_at.strftime('%H%M') }}">
+                    data-timestamp="{{ t.date.strftime('%Y%m%d') }}{{ t.created_at.strftime('%H%M%S') }}">
                     
                     <td class="pl-4 pr-2 py-3 overflow-hidden">
                         <div class="flex items-center">
