@@ -603,7 +603,13 @@ def toggle_fixed(type_fixed, id):
         final_date = today 
         ref_desc = f" (Ref: {target_month:02d}/{target_year})"
         flash_msg = f"Antecipado para hoje com referência a {target_month:02d}/{target_year}."
+    elif view_date == current_view_date:
+        # Se for o mês atual, ignora o dia programado e lança com a data do clique (hoje)
+        final_date = today 
+        ref_desc = ""
+        flash_msg = None
     else:
+        # Se for um mês passado (esqueceu de marcar), mantém a data programada para não bagunçar o passado
         final_date = None 
         ref_desc = ""
         flash_msg = None
